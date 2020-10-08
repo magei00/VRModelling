@@ -132,6 +132,7 @@ namespace Controls
                     }
                     planeSnap = true;
                     ControlsManager.Instance.Extrudable.rebuild = true;
+                    Debug.Log("SBS");
 
                 }
                 else if (rightGrabControl.collidedFaceHandle != null && rightGrabControl.HandState.ToString().Equals("TOUCHING") && !OVRInput.Get(OVRInput.Touch.Any, OVRInput.Controller.RTouch))

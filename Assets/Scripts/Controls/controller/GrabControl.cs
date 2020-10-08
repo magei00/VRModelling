@@ -14,8 +14,9 @@ public class GrabControl : MonoBehaviour {
 	public OVRInput.Controller Controller = OVRInput.Controller.RTouch;
 
     public State HandState = State.EMPTY;
-	
-	public GrabControl OtherHand;
+    private State PrevHandState = State.EMPTY;
+
+    public GrabControl OtherHand;
 	
 	private List<IInteractableObject> _interactableObjects;
 	private IInteractableObject currentInteraction;
@@ -151,7 +152,7 @@ public class GrabControl : MonoBehaviour {
 
                     // clean up deleted objects
                     _interactableObjects.RemoveAll(obj => (obj == null));
-                    
+
                     HandState = _interactableObjects.Count == 0? State.EMPTY : State.TOUCHING;
                     controls.DestroyInvalidObjects();
                     controls.UpdateControls();
@@ -161,5 +162,14 @@ public class GrabControl : MonoBehaviour {
 
                 break;
         }
+
+
+        //Debug state changes
+        if(PrevHandState != HandState)
+        {
+            Debug.Log(Controller.ToString() +": " + HandState.ToString());
+        }
+        PrevHandState = HandState;
+
     }
 }
