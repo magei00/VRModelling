@@ -678,6 +678,10 @@ Prefab:
       propertyPath: enableMeshRotation
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1035052136293884, guid: d4b966a085d053a4aadda7b51abb0f0b, type: 2}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d4b966a085d053a4aadda7b51abb0f0b, type: 2}
   m_IsPrefabAsset: 0
@@ -706,7 +710,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 931964818}
   m_LocalRotation: {x: 0, y: 0.2588191, z: 0, w: 0.9659258}
-  m_LocalPosition: {x: 0, y: -0.03, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 368414695}
@@ -719,7 +723,7 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 931964818}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -754,7 +758,7 @@ MeshFilter:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 931964818}
-  m_Mesh: {fileID: 4300002, guid: dfd3b27dedb742a49b4efdcea7fcec1c, type: 3}
+  m_Mesh: {fileID: 4300000, guid: b37351ce5dfdf034aaeb3f0f600183aa, type: 3}
 --- !u!114 &931964822
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -768,10 +772,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   handlePrefab: {fileID: 1306760141422468, guid: 0e3505b61faa0d049b8404d48b32d74e,
     type: 2}
+  turntableRingPrefab: {fileID: 1538990662419202, guid: 8a637c74b01ce7b4c9e7acf27a386776,
+    type: 2}
   childObject: {fileID: 368414695}
   elementCount: 8
-  radius: 0.25
-  height: 0.05
+  radius: 0.125
+  height: 0
+  rotationSensitivity: 5
 --- !u!1 &962797909
 GameObject:
   m_ObjectHideFlags: 0
