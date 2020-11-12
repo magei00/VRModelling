@@ -43,8 +43,8 @@ namespace Controls
                 {
                     var direction = (_turntable.transform.position - handTransform.position) * GetComponentInParent<Turntable>().rotationSensitivity;
                     direction.y = 0;
-                    Debug.Log(direction);
-                    Debug.Log(GetComponentInParent<Turntable>().rotationSensitivity);
+                    //Debug.Log(direction);
+                    //Debug.Log(GetComponentInParent<Turntable>().rotationSensitivity);
                     _turntable.transform.rotation = initialRotation * startRotation * Quaternion.LookRotation(direction);
                 }
                 else

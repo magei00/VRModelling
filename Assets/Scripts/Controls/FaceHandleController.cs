@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Assets.GEL;
@@ -93,14 +94,8 @@ namespace Controls
             const float SNAP_DISTANCE = 0.04f;
             const float SNAP_ANGLE = 20.0f;
 
-            Vector3 left_ctrl_pt = GameObject.Find("LeftHandAnchor").transform.position;
-            Vector3 right_ctrl_pt = GameObject.Find("RightHandAnchor").transform.position;
-            float dist_left_ctrl = (10.0f * (left_ctrl_pt - transform.position)).sqrMagnitude;
-            float dist_right_ctrl = (10.0f * (right_ctrl_pt - transform.position)).sqrMagnitude;
-            float sz = 0.01f + 0.09f / (Mathf.Min(dist_left_ctrl, dist_right_ctrl) + 1.0f);
-            transform.localScale = new Vector3(sz, sz, sz);
-
-
+            UpdateHandleSize();
+            
             if (IsDragged)
             {
                 if (!isExtruding && extrudingFaces.Count == 1)
@@ -114,6 +109,7 @@ namespace Controls
                 GrabControl leftGrabControl = GameObject.Find("leftGrabControl").GetComponent<GrabControl>();
                 GrabControl rightGrabControl = GameObject.Find("rightGrabControl").GetComponent<GrabControl>();
 
+                //Check if left hand is sensing, if true do SBS
                 if (leftGrabControl.collidedFaceHandle != null && leftGrabControl.HandState.ToString().Equals("TOUCHING") && !OVRInput.Get(OVRInput.Touch.Any, OVRInput.Controller.LTouch))
                 {
                     
@@ -135,6 +131,7 @@ namespace Controls
                     Debug.Log("SBS");
 
                 }
+                //Check if right hand is sensing, if true do SBS
                 else if (rightGrabControl.collidedFaceHandle != null && rightGrabControl.HandState.ToString().Equals("TOUCHING") && !OVRInput.Get(OVRInput.Touch.Any, OVRInput.Controller.RTouch))
                 {
 
@@ -153,6 +150,7 @@ namespace Controls
                     }
                     planeSnap = true;
                     ControlsManager.Instance.Extrudable.rebuild = true;
+                    Debug.Log("SBS");
                 }
                 else
                 {
@@ -180,8 +178,8 @@ namespace Controls
                     }
 
                     //if (OVRInput.Get(OVRInput.NearTouch.PrimaryThumbButtons, gc.Controller) && extrudingFaces.Count() == 1)
+                    //Measuring band
                     if (OVRInput.Get(OVRInput.NearTouch.PrimaryThumbButtons, gc.Controller))
-
                     {
                         tickState = true;
                     }
@@ -281,6 +279,8 @@ namespace Controls
                 }
             }
         }
+
+        
 
         public Quaternion GetControllerRotationInLocalSpace()
         {
@@ -405,8 +405,8 @@ namespace Controls
                 else if (!planeSnap)
                 /*else if (extrudingFaces.Count == 1)*/ // yes/no maybe
                 {
-
-                    if (hasDistinctAdjacentFaces(collidedFaceHandle))
+                    Debug.Log("Attempting face bridging");
+                    if (true)//(hasDistinctAdjacentFaces(collidedFaceHandle))
                     {
                         //collidedFaceHandleVertexPositions = controlsManager.GetVertexPositionsFromFaces(new List<int> { collidedFaceID });
                         collidedFaceHandleVertexPositions = initialManifold.GetVertexPositionsFromFace(collidedFaceID);
@@ -414,13 +414,13 @@ namespace Controls
                         if (collidedFaceHandleVertexPositions.Count() == initialVertexPositions.Count() && extrudingFaces.Count == 1)
                         {
                             var matches = faceBridgingVertexAssignment(initialVertexPositions, collidedFaceHandleVertexPositions);
-
+                            
                             if (facingFaces(matches, AssociatedFaceID, initialVertexPositions, collidedFaceID, collidedFaceHandleVertexPositions))
                             {
                                 Extrudable.ChangeManifold(initialManifold.Copy());
-
+                                Debug.Log("Applying face bridging");
                                 if (matches.Length == 6)
-                                {                               
+                                {
                                     Extrudable.bridgeFaces(AssociatedFaceID, collidedFaceID, new int[] { matches[0], matches[1], matches[2] }, new int[] { matches[3], matches[4], matches[5] }, 3);
                                     ControlsManager.Instance.UpdateControls();
                                 }
@@ -435,6 +435,11 @@ namespace Controls
                     collidedFaceHandleVertexPositions = null;
                 }
 
+
+                //Merge extrusion if done up against other faces.
+                MergeWithCollidingFaces();
+
+                //Check if mesh is valid
                 extrudingFaces = new List<int>(); // create new list (may be referenced by other hand)
 
                 int collapsed = Extrudable.CollapseShortEdges(0.019f);
@@ -460,13 +465,51 @@ namespace Controls
                     ControlsManager.Instance.Extrudable.rebuild = true;
                     //ControlsManager.Instance.UpdateControls();
                     ControlsManager.FireUndoEndEvent(mesh, this, initialPosition, initialRotation);
+
+                    
+
+                    
                 }
                 else
                 {
                     Extrudable.ChangeManifold(initialManifold);
                 }
+                
             }
-            planeSnap = false;
+             
+
+        }
+
+        private void MergeWithCollidingFaces()
+        {
+
+            //Collecting all the faces of the extrusion, and comparing them to neighbouring faces. If facing add them for removal.
+            var facesToRemove = new List<int>();
+
+            foreach (int face0 in extrudingFaces)
+            {
+
+                foreach (int face1 in Extrudable._manifold.GetAdjacentFaceIdsAndEdgeCenters(face0).faceId)
+                {
+                    foreach (int face2 in Extrudable._manifold.GetAdjacentFaceIdsAndEdgeCenters(face1).faceId)
+                    {
+                        if (facingFaces(face1, face2))
+                        {
+                            facesToRemove.Add(face1);
+                            facesToRemove.Add(face2);
+
+                        }
+                    }
+                }
+            }
+
+            //remove facing faces and stich everything together
+            foreach (int face in facesToRemove)
+            {
+                Extrudable._manifold.RemoveFace(face);
+            }
+            Extrudable._manifold.StitchMesh(0.02);
+            Extrudable.TriangulateAndDrawManifold();
         }
 
         public void UpdatePositionAndRotation(Vector3 center, Vector3 normal, Vector3 edge)
@@ -579,6 +622,9 @@ namespace Controls
         {
             Vector3 f1norm = Extrudable.GetFaceNormal(face1ID);
             Vector3 f2norm = Extrudable.GetFaceNormal(face2ID);
+
+            Debug.Log("Normals: " +f1norm + " , " + f2norm);
+
             for (int i = 0; i < (matches.Length/2); i++)
             {
                 if(Vector3.Dot((face1vertices[matches[i]] - face2vertices[matches[i + (matches.Length / 2)]]), f2norm) <= 0.0f)
@@ -592,7 +638,28 @@ namespace Controls
                 }
             }
             return true;
-        } 
+        }
+
+        public bool facingFaces(int face1ID, int face2ID)
+        {
+            Vector3 f1norm = Extrudable.GetFaceNormal(face1ID);
+            Vector3 f2norm = Extrudable.GetFaceNormal(face2ID);
+
+            Vector3 pos1 = Extrudable._manifold.GetCenter(face1ID);
+            Vector3 pos2 = Extrudable._manifold.GetCenter(face2ID);
+
+            float distance = (pos1 - pos2).magnitude;
+
+            
+
+            if (Vector3.Dot(f1norm, f2norm) <= -0.8 && distance <0.005) 
+            {
+                Debug.Log(distance);
+                return true; 
+            }
+
+            return false;
+        }
 
         public bool hasDistinctAdjacentFaces(FaceHandleController faceHandle)
         {

@@ -48,6 +48,9 @@ public class Turntable : MonoBehaviour
             go.transform.localRotation = Quaternion.Euler(0, 180 + i * 360.0f / elementCount, 0);
             go.GetComponent<TurntableController>()._turntable = this;
             go.transform.parent = this.transform;
+
+            // hacked way of setting size, should be done better. This shares the same model as vertices which creates problems.
+            //go.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         }
         //create ring model
         var ring = Instantiate(turntableRingPrefab);

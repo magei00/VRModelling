@@ -167,7 +167,7 @@ public class GrabControl : MonoBehaviour {
         //Debug state changes
         if(PrevHandState != HandState)
         {
-            Debug.Log(Controller.ToString() +": " + HandState.ToString());
+            //Debug.Log(Controller.ToString() +": " + HandState.ToString());
         }
         PrevHandState = HandState;
 

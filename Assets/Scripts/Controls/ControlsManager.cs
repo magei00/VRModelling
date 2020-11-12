@@ -43,7 +43,7 @@ namespace Controls
 
         public bool hideControls = false;
 
-        public void Update()
+        public void Update() //check if hands are below turntable, if true hide controls
         {
             bool doHideControls = false;
             if (turntable)

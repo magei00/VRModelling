@@ -1,10 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.UI;
 
 public class MyLog : MonoBehaviour
 {
     string myLog;
     Queue myLogQueue = new Queue();
+    public Text text;
 
     void Start()
     {
@@ -42,10 +44,12 @@ public class MyLog : MonoBehaviour
         {
             myLog += mylog;
         }
+
+        text.text = myLog;
     }
 
     void OnGUI()
     {
-        GUILayout.Label(myLog);
+        //GUILayout.Label(myLog);
     }
 }
