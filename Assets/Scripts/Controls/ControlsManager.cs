@@ -303,6 +303,7 @@ namespace Controls
                     vertexHandleController.Value.transform.localPosition = vertexPosition;
 
                     Vector3 vertexNormal = manifold.GetVertexNormal(vertexHandleController.Key);
+                    //Debug.Log("VertexHandleNormal: " + vertexNormal);
                     Quaternion handleRotation = Quaternion.LookRotation(-vertexNormal);
                     vertexHandleController.Value.transform.localRotation = handleRotation;
                 }
@@ -382,6 +383,7 @@ namespace Controls
 
         public void InstantiateLatches(Manifold manifold, FaceHandleController handleController)
         {
+            
             var neighbourFaces = manifold.GetAdjacentFaceIdsAndEdgeCenters(handleController.AssociatedFaceID);
             var edgeCenters = neighbourFaces.edgeCenter;
 

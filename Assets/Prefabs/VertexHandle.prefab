@@ -145,9 +145,11 @@ MonoBehaviour:
   IsDragged: 0
   AssociatedVertexID: 0
   Extrudable: {fileID: 0}
+  Avatar: {fileID: 0}
   refinementActive: 1
   edgebarPrefab: {fileID: 1149686863623914, guid: 3fedf42c8b7bb734292316539c68e7b6,
     type: 2}
+  lineObject: {fileID: 1817045333205722, guid: c8808b985f1b7b54ca5f2d5243c3b332, type: 2}
 --- !u!135 &135923702783747552
 SphereCollider:
   m_ObjectHideFlags: 1

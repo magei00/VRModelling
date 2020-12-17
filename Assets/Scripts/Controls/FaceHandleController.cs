@@ -74,12 +74,15 @@ namespace Controls
 
         private Vector3 initialControllerPosInLocalSpace;
 
+        private GameObject sbsPlane;
+        private UnityEngine.Object loadedSBSPlane;
         void Awake()
         {
             _hoverHighlight = GetComponent<HoverHighlight>();
             var meshFilter = GetComponent<MeshFilter>();
             mesh = meshFilter.sharedMesh;
             controlsManager = FindObjectOfType<ControlsManager>();
+            loadedSBSPlane = Resources.Load("Prefabs/SBS_Plane_indicator");
         }
 
         public IEnumerator Buzz(OVRInput.Controller gcController)
@@ -128,8 +131,8 @@ namespace Controls
                     }
                     planeSnap = true;
                     ControlsManager.Instance.Extrudable.rebuild = true;
-                    Debug.Log("SBS");
-
+                    //Debug.Log("SBS");
+                    EnableSBSPlane(facePoint, faceNormal);
                 }
                 //Check if right hand is sensing, if true do SBS
                 else if (rightGrabControl.collidedFaceHandle != null && rightGrabControl.HandState.ToString().Equals("TOUCHING") && !OVRInput.Get(OVRInput.Touch.Any, OVRInput.Controller.RTouch))
@@ -151,9 +154,11 @@ namespace Controls
                     planeSnap = true;
                     ControlsManager.Instance.Extrudable.rebuild = true;
                     Debug.Log("SBS");
+                    EnableSBSPlane(facePoint, faceNormal);
                 }
                 else
                 {
+                    DisableSBSPlane();
                     planeSnap = false;
                     if (!isExtruding)
                     {
@@ -280,7 +285,30 @@ namespace Controls
             }
         }
 
-        
+        private void DisableSBSPlane()
+        {
+            if (sbsPlane != null)
+            {
+                Destroy(sbsPlane);
+            }
+        }
+
+        private void EnableSBSPlane(Vector3 pos, Vector3 faceNorm)
+        {
+            if (sbsPlane == null)
+            {
+                sbsPlane = (GameObject)Instantiate(loadedSBSPlane, pos, Quaternion.LookRotation(faceNorm));
+                
+                sbsPlane.transform.parent = ControlsManager.Instance.transform;
+                sbsPlane.transform.localPosition = pos;
+                sbsPlane.transform.Translate(faceNorm * -0.01f);
+                sbsPlane.transform.localRotation = Quaternion.LookRotation(faceNorm);
+                sbsPlane.transform.Rotate(0,90,90,Space.Self);
+                Debug.Log("Created" + sbsPlane.ToString());
+                Debug.Log(pos+"   "+faceNorm);
+                //Debug.Break();
+            }
+        }
 
         public Quaternion GetControllerRotationInLocalSpace()
         {
@@ -403,7 +431,7 @@ namespace Controls
 
                 }
                 else if (!planeSnap)
-                /*else if (extrudingFaces.Count == 1)*/ // yes/no maybe
+                //else if (extrudingFaces.Count == 1) // yes/no maybe
                 {
                     Debug.Log("Attempting face bridging");
                     if (true)//(hasDistinctAdjacentFaces(collidedFaceHandle))
@@ -434,10 +462,9 @@ namespace Controls
                     }
                     collidedFaceHandleVertexPositions = null;
                 }
+                
 
-
-                //Merge extrusion if done up against other faces.
-                MergeWithCollidingFaces();
+                MergeWithCollidingFaces(); //Merge extrusion if done up against other faces.
 
                 //Check if mesh is valid
                 extrudingFaces = new List<int>(); // create new list (may be referenced by other hand)
@@ -474,7 +501,7 @@ namespace Controls
                 {
                     Extrudable.ChangeManifold(initialManifold);
                 }
-                
+                DisableSBSPlane();
             }
              
 
@@ -483,9 +510,68 @@ namespace Controls
         private void MergeWithCollidingFaces()
         {
 
-            //Collecting all the faces of the extrusion, and comparing them to neighbouring faces. If facing add them for removal.
+            //Collecting all the faces of the extrusion, and comparing them to neighbouring faces. If they are facing add them both for removal.
             var facesToRemove = new List<int>();
 
+            int noFaces = Extrudable._manifold.NumberOfFaces();
+
+            HashSet<int> facesBeingExtruded = new HashSet<int>();
+
+            foreach(int face0 in extrudingFaces)
+            {
+                foreach(int face1 in Extrudable._manifold.GetAdjacentFaceIdsAndEdgeCenters(face0).faceId)
+                {
+                    facesBeingExtruded.Add(face1);
+                }
+            }
+
+            foreach(int face in extrudingFaces)
+            {
+                facesBeingExtruded.Add(face);
+            }
+
+            foreach (int faceMoving in facesBeingExtruded)
+            {
+                for (int faceStatic = 0; faceStatic < noFaces; faceStatic++)
+                {
+                    if (facingFaces(faceMoving, faceStatic)) //initial cheap check
+                    {
+                        var verticesFromFaceMoving = Extrudable._manifold.GetVertexPositionsFromFace(faceMoving);
+                        var verticesFromFaceStatic = Extrudable._manifold.GetVertexPositionsFromFace(faceStatic);
+                        if (verticesFromFaceMoving.Count() == verticesFromFaceStatic.Count())
+                        {
+                            var matches = faceBridgingVertexAssignment(verticesFromFaceMoving, verticesFromFaceStatic);
+
+                            if (facingFaces(matches, faceMoving, verticesFromFaceMoving, faceStatic, verticesFromFaceStatic))
+                            {
+                                //Extrudable.ChangeManifold(initialManifold.Copy());
+                                Debug.Log("Applying face bridging");
+                                if (matches.Length == 6)
+                                {
+                                    //Extrudable.bridgeFaces(faceMoving, faceStatic, new int[] { matches[0], matches[1], matches[2] }, new int[] { matches[3], matches[4], matches[5] }, 3);
+                                    //ControlsManager.Instance.UpdateControls();
+                                    facesToRemove.Add(faceMoving);
+                                    facesToRemove.Add(faceStatic);
+                                }
+                                else if (matches.Length == 8)
+                                {
+                                    //Extrudable.bridgeFaces(faceMoving, faceStatic, new int[] { matches[0], matches[1], matches[2], matches[3] }, new int[] { matches[4], matches[5], matches[6], matches[7] }, 4);
+                                    //ControlsManager.Instance.UpdateControls();
+                                    facesToRemove.Add(faceMoving);
+                                    facesToRemove.Add(faceStatic);
+                                }
+                            }
+                        }
+
+
+
+                        
+
+                    }
+                }
+            }
+
+            /*
             foreach (int face0 in extrudingFaces)
             {
 
@@ -501,15 +587,17 @@ namespace Controls
                         }
                     }
                 }
-            }
+            }*/
 
             //remove facing faces and stich everything together
             foreach (int face in facesToRemove)
             {
                 Extrudable._manifold.RemoveFace(face);
             }
-            Extrudable._manifold.StitchMesh(0.02);
-            Extrudable.TriangulateAndDrawManifold();
+            Extrudable._manifold.StitchMesh(0.2);
+            //Extrudable.TriangulateAndDrawManifold();
+            //ControlsManager.Instance.UpdateControls();
+            //ControlsManager.Instance.UpdateControls();
         }
 
         public void UpdatePositionAndRotation(Vector3 center, Vector3 normal, Vector3 edge)
@@ -623,38 +711,40 @@ namespace Controls
             Vector3 f1norm = Extrudable.GetFaceNormal(face1ID);
             Vector3 f2norm = Extrudable.GetFaceNormal(face2ID);
 
-            Debug.Log("Normals: " +f1norm + " , " + f2norm);
+            //Debug.Log("Normals: " +f1norm + " , " + f2norm);
+
+            //if (Vector3.Dot(f1norm, f2norm) <= -0.8) { return false}
 
             for (int i = 0; i < (matches.Length/2); i++)
             {
-                if(Vector3.Dot((face1vertices[matches[i]] - face2vertices[matches[i + (matches.Length / 2)]]), f2norm) <= 0.0f)
+                if((face1vertices[matches[i]] - face2vertices[matches[i + (matches.Length / 2)]]).magnitude >= 0.02f)
                 {
                     return false;
                 }
 
-                if (Vector3.Dot((face2vertices[matches[i + (matches.Length / 2)]] - face1vertices[matches[i]]), f1norm) <= 0.0f)
+                if ((face2vertices[matches[i + (matches.Length / 2)]] - face1vertices[matches[i]]).magnitude >= 0.02f)
                 {
                     return false;
                 }
             }
+            Debug.Log("Normals: " + f1norm + " , " + f2norm);
             return true;
         }
 
         public bool facingFaces(int face1ID, int face2ID)
         {
-            Vector3 f1norm = Extrudable.GetFaceNormal(face1ID);
-            Vector3 f2norm = Extrudable.GetFaceNormal(face2ID);
+            //Vector3 f1norm = Extrudable.GetFaceNormal(face1ID);
+            //Vector3 f2norm = Extrudable.GetFaceNormal(face2ID);
 
             Vector3 pos1 = Extrudable._manifold.GetCenter(face1ID);
             Vector3 pos2 = Extrudable._manifold.GetCenter(face2ID);
 
-            float distance = (pos1 - pos2).magnitude;
+            float distanceBetweenCenters = (pos1 - pos2).magnitude;
 
             
 
-            if (Vector3.Dot(f1norm, f2norm) <= -0.8 && distance <0.005) 
+            if (/*Vector3.Dot(f1norm, f2norm) <= -0.8 && */distanceBetweenCenters < 0.005) 
             {
-                Debug.Log(distance);
                 return true; 
             }
 
