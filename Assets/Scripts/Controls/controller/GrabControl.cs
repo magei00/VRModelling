@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Controls;
 using UnityEngine;
@@ -34,7 +35,10 @@ public class GrabControl : MonoBehaviour {
     public Color hoverColor;
 
     private MeshRenderer _meshRenderer;
-    
+
+    private Vector3 prevPos;
+    private Quaternion prevRot;
+
     void Awake()
     {
         _interactableObjects = new List<IInteractableObject>();
@@ -163,13 +167,38 @@ public class GrabControl : MonoBehaviour {
                 break;
         }
 
+        //Movement of model
+        if (OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, Controller) > 0.5f 
+            && IsInsideModel()
+            && currentInteraction == null)
+        {
+            controls.Extrudable.transform.root.Translate(transform.position - prevPos, Space.World);
+            Quaternion deltaRot = transform.rotation * Quaternion.Inverse(prevRot);
+            controls.Extrudable.transform.root.position = RotatePointAroundPivot(controls.Extrudable.transform.root.position, transform.position, deltaRot);
+            controls.Extrudable.transform.root.Rotate(deltaRot.eulerAngles,Space.World);
+            //controls.UpdateControls();
+        }
+        
+        
+        prevPos = transform.position;
+        prevRot = transform.rotation;
 
         //Debug state changes
-        if(PrevHandState != HandState)
+            if (PrevHandState != HandState)
         {
             //Debug.Log(Controller.ToString() +": " + HandState.ToString());
         }
         PrevHandState = HandState;
 
+    }
+
+    private bool IsInsideModel()
+    {
+        return true;
+    }
+
+    public static Vector3 RotatePointAroundPivot(Vector3 point, Vector3 pivot, Quaternion rotation)
+    {
+        return rotation * (point - pivot) + pivot;
     }
 }

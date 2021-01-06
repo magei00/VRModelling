@@ -37,5 +37,18 @@ namespace Assets.GEL
         {
             return _intVector;
         }
+        /*
+        public int[] ToIntArray()
+        {
+            int len = _intVector.Length;
+            int[] result = new int[len];
+
+            for(int i =0; i < len; i++)
+            {
+                result[i] = (int)_intVector.GetValue(i);
+            }
+
+            return result;
+        }*/
     }
 }

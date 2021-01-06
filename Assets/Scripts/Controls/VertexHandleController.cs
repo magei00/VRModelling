@@ -54,17 +54,15 @@ namespace Controls
 
         private GameObject edgebar;
 
-        public GameObject lineObject;
-        private LineRenderer lr;
+        public GameObject lineObjectBP;
+        private GameObject lineObject;
 
         void Awake()
         {
             _hoverHighlight = GetComponent<HoverHighlight>();
             var meshFilter = GetComponent<MeshFilter>();
             mesh = meshFilter.sharedMesh;
-            lineObject = Instantiate<GameObject>(lineObject);
-            //lineObject.transform.parent = this.transform;
-            lr = lineObject.GetComponent<LineRenderer>();
+            
         }
 
         // Update is called once per frame
@@ -90,7 +88,7 @@ namespace Controls
 
                     Vector3 controllerPosInLocalSpace = transform.parent.worldToLocalMatrix.MultiplyPoint(_controllerCollider.transform.position);
                     Vector3 targetPos = controllerPosInLocalSpace - initialControllerOffset;
-                    targetPos.y = Mathf.Max(minDeltaY, targetPos.y);
+                    //targetPos.y = Mathf.Max(minDeltaY, targetPos.y); I don't know what this line was supposed to do, if something is broken in the futere maybe this is needed.
                     transform.localPosition = targetPos;
 
                     Extrudable.MoveVertexTo(
@@ -199,26 +197,38 @@ namespace Controls
 
         private void DisableSBSLine()
         {
-            lr.enabled = false;
+            if(lineObject != null)
+            {
+                Destroy(lineObject);
+            }
         }
 
         private void EnableSBSLine(Vector3 point, Vector3 translation, Matrix4x4 m)
         {
-            lr.enabled = true;
+            if (lineObject == null)
+            {
+                lineObject = Instantiate(lineObjectBP);
+                lineObject.transform.parent = ControlsManager.Instance.transform;
+                lineObject.transform.localPosition = new Vector3(0,0,0);
+                lineObject.transform.localRotation = new Quaternion(0,0,0,0);
 
-            Vector3 p1 = m *point;
-            
-            Vector3 p2 = m * (point+translation);
+                LineRenderer lr = lineObject.GetComponent<LineRenderer>();
+                lr.enabled = true;
 
-            Vector3 direction = p1 - p2;
-            //lr.startWidth = lr.endWidth = 0.5f;
-            //lr.startColor = lr.endColor = Color.green;
-            //lr.positionCount = 2;
-            //Debug.Log(lr);
-            Vector3 yOffset = new Vector3(0, 0.5f, 0);
-            lr.SetPosition(0, p1+yOffset+direction*10);
-            lr.SetPosition(1, p2+yOffset+direction*-10);
-            
+                Vector3 p1 = point;
+
+                Vector3 p2 = (point + translation);
+
+                Vector3 direction = p1 - p2;
+                //lr.startWidth = lr.endWidth = 0.5f;
+                //lr.startColor = lr.endColor = Color.green;
+                //lr.positionCount = 2;
+                //Debug.Log(lr);
+                Vector3 yOffset = new Vector3(0, 0.0f, 0);
+                lr.SetPosition(0, p1 + yOffset + direction * 10);
+                lr.SetPosition(1, p2 + yOffset + direction * -10);
+                
+            }
         }
 
         public override void Interact()
@@ -365,7 +375,8 @@ namespace Controls
 
             if (edgebar)
             Destroy(edgebar);
- 
+
+            DisableSBSLine();
         }
 
         private RefinementMode DetermineRefinement(Dictionary<string, float> angleDict)

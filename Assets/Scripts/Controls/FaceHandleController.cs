@@ -301,7 +301,7 @@ namespace Controls
                 
                 sbsPlane.transform.parent = ControlsManager.Instance.transform;
                 sbsPlane.transform.localPosition = pos;
-                sbsPlane.transform.Translate(faceNorm * -0.01f);
+                sbsPlane.transform.Translate(faceNorm * -0.02f);
                 sbsPlane.transform.localRotation = Quaternion.LookRotation(faceNorm);
                 sbsPlane.transform.Rotate(0,90,90,Space.Self);
                 Debug.Log("Created" + sbsPlane.ToString());
@@ -472,19 +472,23 @@ namespace Controls
                 int collapsed = Extrudable.CollapseShortEdges(0.019f);
                 Extrudable.TriangulateAndDrawManifold(); // needed for collision detection in isValidMesh
 
+
+
+                if (Extrudable.isValidMesh())
+                {
+                    ControlsManager.Instance.DestroyInvalidObjects();
+                    ControlsManager.Instance.Extrudable.rebuild = true;
+                    //ControlsManager.Instance.UpdateControls();
+                    ControlsManager.FireUndoEndEvent(mesh, this, initialPosition, initialRotation);
+                }
+                else
+                {
+                    Extrudable.ChangeManifold(initialManifold);
+                }
+/*
                 if (collapsed > 0)
                 {
-                    if (Extrudable.isValidMesh())
-                    {
-                        ControlsManager.Instance.DestroyInvalidObjects();
-                        ControlsManager.Instance.Extrudable.rebuild = true;
-                        //ControlsManager.Instance.UpdateControls();
-                        ControlsManager.FireUndoEndEvent(mesh, this, initialPosition, initialRotation);
-                    }
-                    else
-                    {
-                        Extrudable.ChangeManifold(initialManifold);
-                    }
+                    
                 }
                 else if (Extrudable.isValidMesh())
                 {
@@ -500,7 +504,7 @@ namespace Controls
                 else
                 {
                     Extrudable.ChangeManifold(initialManifold);
-                }
+                }*/
                 DisableSBSPlane();
             }
              
@@ -513,8 +517,22 @@ namespace Controls
             //Collecting all the faces of the extrusion, and comparing them to neighbouring faces. If they are facing add them both for removal.
             var facesToRemove = new List<int>();
 
-            int noFaces = Extrudable._manifold.NumberOfFaces();
+            Manifold manifold = Extrudable._manifold;
 
+
+            int noFaces = manifold.NumberOfFaces();
+
+            
+            var vertexIds = new int[manifold.NumberOfVertices()];
+            var halfedgeIds = new int[manifold.NumberOfHalfEdges()];
+            int[] allFaces = new int[noFaces];
+            Extrudable._manifold.GetHMeshIds(vertexIds, halfedgeIds, allFaces);
+
+            
+
+            int[] staticFaces = allFaces;
+
+         
             HashSet<int> facesBeingExtruded = new HashSet<int>();
 
             foreach(int face0 in extrudingFaces)
@@ -532,8 +550,10 @@ namespace Controls
 
             foreach (int faceMoving in facesBeingExtruded)
             {
-                for (int faceStatic = 0; faceStatic < noFaces; faceStatic++)
+                foreach (int faceStatic in staticFaces)
                 {
+                    if (faceMoving == faceStatic) { break; }
+
                     if (facingFaces(faceMoving, faceStatic)) //initial cheap check
                     {
                         var verticesFromFaceMoving = Extrudable._manifold.GetVertexPositionsFromFace(faceMoving);
@@ -594,7 +614,7 @@ namespace Controls
             {
                 Extrudable._manifold.RemoveFace(face);
             }
-            Extrudable._manifold.StitchMesh(0.2);
+            Extrudable._manifold.StitchMesh(0.05);
             //Extrudable.TriangulateAndDrawManifold();
             //ControlsManager.Instance.UpdateControls();
             //ControlsManager.Instance.UpdateControls();
@@ -733,6 +753,8 @@ namespace Controls
 
         public bool facingFaces(int face1ID, int face2ID)
         {
+            
+
             //Vector3 f1norm = Extrudable.GetFaceNormal(face1ID);
             //Vector3 f2norm = Extrudable.GetFaceNormal(face2ID);
 

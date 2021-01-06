@@ -32,8 +32,13 @@ public class Turntable : MonoBehaviour
     void Start()
     {
         //create lower handles
+        bool drawTurnTable = false;
+
+        if (drawTurnTable)
+        {
         CreateTurntableHandles(0.0f);
         CreateTurntableHandles(0.8f);
+        }
         
         
     }

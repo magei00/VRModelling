@@ -22,13 +22,15 @@ public class WorktableController : MonoBehaviour
 
     //[SerializeField]
     private WorktableController _worktableController;
+    private GameObject baseChild;
 
+    private OVRInput.Controller lController = OVRInput.Controller.LTouch;
     // Use this for initialization
     void Start()
     {
         //this.transform.position = userBody.position - _offset;
         //this.transform.rotation = Quaternion.Euler(_rotation);
-
+        baseChild = transform.GetChild(0).gameObject;
     }
 
     // Update is called once per frame
@@ -40,6 +42,22 @@ public class WorktableController : MonoBehaviour
             updateObjectRotation();
         }
 
+
+        //Show or hide worktable based on hand direction
+        Debug.DrawLine(ControlsManager.Instance.handCenters[0].position, ControlsManager.Instance.handCenters[0].position + OVRInput.GetLocalControllerRotation(lController) * Vector3.right, Color.red);
+
+        Debug.DrawLine(ControlsManager.Instance.handCenters[0].position, (Vector3.up * 10) + ControlsManager.Instance.handCenters[0].position);
+
+        if (Vector3.Dot(OVRInput.GetLocalControllerRotation(lController) * Vector3.right, Vector3.up) > 0.95f)
+        {
+            baseChild.SetActive(true);
+            transform.position = ControlsManager.Instance.handCenters[0].position + Vector3.up*0.05f;
+            
+        }
+        else
+        {
+            baseChild.SetActive(false);
+        }
         //if (Input.GetKeyDown("s"))
         //{
         //    //bool test = RefinementTestLoop(30, 40);

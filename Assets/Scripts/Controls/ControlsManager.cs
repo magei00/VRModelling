@@ -494,6 +494,31 @@ namespace Controls
                 _edgeHandles.Remove(e);
                 Destroy(obj.gameObject);
             }
+
+            // Brute force delete all edge controllers every cleanup, might not be effecient but circumvents bug that doesn't remove all invalid edgecontrollers.
+            int[] ekeys = _edgeHandles.Keys.ToArray();
+            foreach(int key in ekeys)
+            {
+                var obj = _edgeHandles[key];
+                _edgeHandles.Remove(key);
+                Destroy(obj.gameObject);
+            }
+
+            int[] fkeys = _faceHandles.Keys.ToArray();
+            foreach (int key in fkeys)
+            {
+                var obj = _faceHandles[key];
+                _faceHandles.Remove(key);
+                Destroy(obj.gameObject);
+            }
+
+            int[] vkeys = _vertexHandles.Keys.ToArray();
+            foreach (int key in vkeys)
+            {
+                var obj = _vertexHandles[key];
+                _vertexHandles.Remove(key);
+                Destroy(obj.gameObject);
+            }
         }
 
         public void UpdateFacesAndSelectedEdges(List<int> extrudingFaces)
