@@ -19,6 +19,7 @@ public class WorktableController : MonoBehaviour
     public Transform modellingObject;
 
     public bool enableMeshRotation = true;
+    private bool worktableActive = false;
 
     //[SerializeField]
     private WorktableController _worktableController;
@@ -48,15 +49,21 @@ public class WorktableController : MonoBehaviour
 
         Debug.DrawLine(ControlsManager.Instance.handCenters[0].position, (Vector3.up * 10) + ControlsManager.Instance.handCenters[0].position);
 
-        if (Vector3.Dot(OVRInput.GetLocalControllerRotation(lController) * Vector3.right, Vector3.up) > 0.95f)
+        if (Vector3.Dot(OVRInput.GetLocalControllerRotation(lController) * Vector3.right, Vector3.up) > 0.95f )
         {
-            baseChild.SetActive(true);
-            transform.position = ControlsManager.Instance.handCenters[0].position + Vector3.up*0.05f;
-            
+            if (!worktableActive)
+            {
+                baseChild.SetActive(true);
+                worktableActive = true;
+                StartCoroutine(Grow(new Vector3(0.1f, 0.1f, 0.1f), new Vector3(2f, 2f, 2f)));
+            }
+            transform.position = ControlsManager.Instance.handCenters[0].position + Vector3.up*0.05f;  
         }
-        else
+        else if (worktableActive)
         {
-            baseChild.SetActive(false);
+            worktableActive = false;
+            StartCoroutine(Grow(new Vector3(2f, 2f, 2f), new Vector3(0.1f, 0.1f, 0.1f)));
+            
         }
         //if (Input.GetKeyDown("s"))
         //{
@@ -66,6 +73,30 @@ public class WorktableController : MonoBehaviour
         //    Debug.Log(test);
         //}
 
+    }
+
+    public IEnumerator Grow(Vector3 startScale, Vector3 endScale)
+    {
+        var elapsedTime = 0f;
+        var waitTime = 0.2f;
+
+        while (elapsedTime < waitTime)
+        {
+            transform.localScale = Vector3.Lerp(startScale, endScale, (elapsedTime / waitTime));
+            elapsedTime += Time.deltaTime;
+
+            // Yield here
+            yield return null;
+        }
+        // Make sure we got there
+        transform.localScale = endScale;
+
+        if (startScale.x > endScale.x)
+        {
+            baseChild.SetActive(false);
+        }
+
+        yield return null;
     }
 
     public void updateObjectRotation()
