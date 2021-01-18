@@ -20,7 +20,7 @@ public class ExtrudableMesh : MonoBehaviour
 
     public bool rebuild = false;
 
-
+    private BoxCollider boxCollider;
 
     // Use this for initialization
     void Awake()
@@ -47,10 +47,13 @@ public class ExtrudableMesh : MonoBehaviour
 
     public void Reset()
     {
+        boxCollider = GetComponent<BoxCollider>();
+
         _manifold = BuildInitialManifold();
         TriangulateAndDrawManifold();
         GetComponent<MeshFilter>().mesh = mesh;
-
+        
+        
     }
 
     public Mesh GetMeshClone()
@@ -152,6 +155,7 @@ public class ExtrudableMesh : MonoBehaviour
         _manifold.StitchMesh(1e-10);
         TriangulateAndDrawManifold();
 
+        
         mesh = GetComponent<MeshFilter>().sharedMesh;
         if (mesh == null)
         {
@@ -169,6 +173,7 @@ public class ExtrudableMesh : MonoBehaviour
 
         ControlsManager.Instance.Clear();
         ControlsManager.Instance.UpdateControls();
+
     }
 
     public void ChangeManifold(Manifold newManifold)
@@ -300,6 +305,7 @@ public class ExtrudableMesh : MonoBehaviour
             i += polyCount;
         }
 
+        
         mesh.name = "extruded";
         mesh.SetIndices(new int[0], MeshTopology.Triangles, 0);
         mesh.SetIndices(new int[0], MeshTopology.Lines, 1);
@@ -309,6 +315,19 @@ public class ExtrudableMesh : MonoBehaviour
         mesh.SetIndices(polygonsFinal.ToArray(), MeshTopology.Triangles, 0);
         mesh.SetIndices(edges.ToArray(), MeshTopology.Lines, 1);
         mesh.UploadMeshData(false);
+
+
+        mesh.RecalculateBounds();
+        UpdateCollider();
+      
+    }
+
+  
+    public void UpdateCollider()
+    {
+        
+        boxCollider.center = mesh.bounds.center;
+        boxCollider.size = mesh.bounds.size;
     }
 
     public bool isValidMesh()
