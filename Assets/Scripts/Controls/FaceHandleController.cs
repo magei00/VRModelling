@@ -301,11 +301,11 @@ namespace Controls
                 
                 sbsPlane.transform.parent = ControlsManager.Instance.transform;
                 sbsPlane.transform.localPosition = pos;
-                sbsPlane.transform.Translate(faceNorm * -0.02f);
+                sbsPlane.transform.Translate(faceNorm * -0.001f);
                 sbsPlane.transform.localRotation = Quaternion.LookRotation(faceNorm);
                 sbsPlane.transform.Rotate(0,90,90,Space.Self);
-                Debug.Log("Created" + sbsPlane.ToString());
-                Debug.Log(pos+"   "+faceNorm);
+                //Debug.Log("Created" + sbsPlane.ToString());
+                //Debug.Log(pos+"   "+faceNorm);
                 //Debug.Break();
             }
         }
@@ -443,7 +443,7 @@ namespace Controls
                         {
                             var matches = faceBridgingVertexAssignment(initialVertexPositions, collidedFaceHandleVertexPositions);
                             
-                            if (facingFaces(matches, AssociatedFaceID, initialVertexPositions, collidedFaceID, collidedFaceHandleVertexPositions))
+                            if (/*facingFaces(matches, AssociatedFaceID, initialVertexPositions, collidedFaceID, collidedFaceHandleVertexPositions)*/ true)
                             {
                                 Extrudable.ChangeManifold(initialManifold.Copy());
                                 Debug.Log("Applying face bridging");
