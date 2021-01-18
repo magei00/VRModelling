@@ -11,6 +11,11 @@ public class UserController : MonoBehaviour {
     public bool movementEnabled = true;
 
 	// Use this for initialization
+
+    void Awake()
+    {
+        transform.localPosition = new Vector3(0, 1f, -1f);
+    }
 	void Start () {
         if (instance == null)
         {
@@ -20,18 +25,24 @@ public class UserController : MonoBehaviour {
         {
             Destroy(gameObject);
         }
-        Vector3 cameraPos = new Vector3(
+        /*Vector3 cameraPos = new Vector3(
             PlayerPrefs.GetFloat("cam.x", transform.localPosition.x),
             PlayerPrefs.GetFloat("cam.y", transform.localPosition.y),
             PlayerPrefs.GetFloat("cam.z", transform.localPosition.z)
         );
-	    transform.localPosition = cameraPos;
+	    transform.localPosition = cameraPos;*/
 
 	    //movementEnabled = true;
 	}
 	
 	// Update is called once per frame
 	void Update () {
+
+        if(OVRInput.Get(OVRInput.RawButton.A) && OVRInput.Get(OVRInput.RawButton.B))
+        {
+            movementEnabled = true;
+        }
+
         if (movementEnabled)
         {
             Vector2 touchThumbPrimary = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
