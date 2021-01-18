@@ -188,6 +188,8 @@ public class GrabControl : MonoBehaviour {
                 break;
         }
 
+
+
         //Movement of model
         /*if (OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, Controller) > 0.5f 
             && IsInsideModel()
