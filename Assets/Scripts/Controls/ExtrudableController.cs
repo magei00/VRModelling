@@ -69,10 +69,12 @@ namespace Controls
 
                 controlsManager.SetGlobalScale(initialScale * (distanceBetweenControllers / initialDistanceBetweenControllers));
 
+                var scaleMovement = (initialPosition - initialControllerCenter) * ((distanceBetweenControllers / initialDistanceBetweenControllers)-1);
+
                 var deltaMovement = (activeControllers[1].transform.position +
                                      activeControllers[0].transform.position) * 0.5f -
                                     initialControllerCenter;
-                controlsManager.Extrudable.transform.root.position =initialPosition + deltaMovement;
+                controlsManager.Extrudable.transform.root.position =initialPosition + scaleMovement+ deltaMovement;
 
             }
             
