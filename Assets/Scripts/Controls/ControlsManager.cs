@@ -59,7 +59,7 @@ namespace Controls
                 }
             }
             
-            if (hideControls != doHideControls)
+            if (hideControls != doHideControls && false) //Disabled for now
             {
                 hideControls = doHideControls;
                 undoManager.hideUndo = hideControls;
@@ -320,6 +320,20 @@ namespace Controls
 
                 InstantiateVertexHandle(manifold, id);
             }
+
+            //update sizes
+            foreach(var faceHandleController in _faceHandles.Values)
+            {
+                faceHandleController.UpdateHandleSize();
+            }
+            foreach (var edgeHandleController in _edgeHandles.Values)
+            {
+                edgeHandleController.UpdateHandleSize();
+            }
+            foreach (var vertexHandleController in _vertexHandles.Values)
+            {
+                vertexHandleController.UpdateHandleSize();
+            }
         }
 
         public void updateAdjacentFaceHandles(int face)
@@ -500,8 +514,13 @@ namespace Controls
             foreach(int key in ekeys)
             {
                 var obj = _edgeHandles[key];
+                if (!obj.Locked)
+                {
+                    
+                }
                 _edgeHandles.Remove(key);
                 Destroy(obj.gameObject);
+
             }
 
             int[] fkeys = _faceHandles.Keys.ToArray();

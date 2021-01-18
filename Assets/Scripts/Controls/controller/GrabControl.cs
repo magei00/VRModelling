@@ -39,6 +39,8 @@ public class GrabControl : MonoBehaviour {
     private Vector3 prevPos;
     private Quaternion prevRot;
 
+    private GameObject collidedObject;
+
     void Awake()
     {
         _interactableObjects = new List<IInteractableObject>();
@@ -61,6 +63,7 @@ public class GrabControl : MonoBehaviour {
 
     void OnTriggerEnter(Collider collider)
     {
+        collidedObject = collider.gameObject;
         var iobj = collider.GetComponent<IInteractableObject>();
         var colliderGameObject = collider.gameObject;
 
@@ -78,13 +81,23 @@ public class GrabControl : MonoBehaviour {
         {
             if (iobj != null)
             {
-                if (_interactableObjects.Count > 0)
+                
+
+                if(colliderGameObject.GetComponent<ExtrudableController>() != null)
                 {
-                    _interactableObjects[_interactableObjects.Count-1].EndHighlight();
+                    _interactableObjects.Insert(0, iobj);
+                }
+                else
+                {
+                    if (_interactableObjects.Count > 0)
+                    {
+                        _interactableObjects[_interactableObjects.Count - 1].EndHighlight();
+                    }
+                    iobj.StartHighlight();
+                    _interactableObjects.Add(iobj);
                 }
 
-                iobj.StartHighlight();
-                _interactableObjects.Add(iobj);
+                
                 HandState = State.TOUCHING;
                 UpdateHoverColor();
             }
@@ -94,6 +107,7 @@ public class GrabControl : MonoBehaviour {
 
     void OnTriggerExit(Collider collider)
     {
+        collidedObject = null;
         var iobj = collider.GetComponent<IInteractableObject>();
         if (iobj != null)
         {
@@ -110,7 +124,10 @@ public class GrabControl : MonoBehaviour {
                 {
                     _interactableObjects[_interactableObjects.Count-1].StartHighlight();
                 }
-                HandState = State.EMPTY;
+                else
+                {
+                    HandState = State.EMPTY;
+                }
             }
             else // remove while holding
             {
@@ -124,6 +141,10 @@ public class GrabControl : MonoBehaviour {
 
     }
 
+    void OnTriggerStay(Collider collider)
+    {
+        collidedObject = collider.gameObject;
+    }
 
     void Update()
     {
@@ -148,7 +169,7 @@ public class GrabControl : MonoBehaviour {
                 
                 if (OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, Controller) < 0.5f)
                 {
-                    currentInteraction.EndInteraction();
+                    currentInteraction.EndInteraction(this);
                     if (currentInteraction != null && !_interactableObjects.Contains(currentInteraction))
                     {
                         currentInteraction.EndHighlight();
@@ -168,7 +189,7 @@ public class GrabControl : MonoBehaviour {
         }
 
         //Movement of model
-        if (OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, Controller) > 0.5f 
+        /*if (OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, Controller) > 0.5f 
             && IsInsideModel()
             && currentInteraction == null)
         {
@@ -183,10 +204,12 @@ public class GrabControl : MonoBehaviour {
         prevPos = transform.position;
         prevRot = transform.rotation;
 
+        */
+
         //Debug state changes
             if (PrevHandState != HandState)
         {
-            //Debug.Log(Controller.ToString() +": " + HandState.ToString());
+            Debug.Log(Controller.ToString() +": " + HandState.ToString());
         }
         PrevHandState = HandState;
 
@@ -194,7 +217,15 @@ public class GrabControl : MonoBehaviour {
 
     private bool IsInsideModel()
     {
-        return true;
+        if(collidedObject != null && collidedObject.GetComponent<ExtrudableMesh>() != null)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+        
     }
 
     public static Vector3 RotatePointAroundPivot(Vector3 point, Vector3 pivot, Quaternion rotation)

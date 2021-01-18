@@ -21,14 +21,15 @@ namespace Controls
             Interact();
         }
 
-        public void EndInteraction()
+        public void EndInteraction(MonoBehaviour controller)
         {
+            _controller = controller;
             StopInteraction();
             _controllerCollider = null;
         }
 
         //Update handle size based on distance to hands.
-        public void UpdateHandleSize()
+        public virtual void UpdateHandleSize()
         {
             Vector3 left_ctrl_pt = GameObject.Find("LeftHandAnchor").transform.position;
             Vector3 right_ctrl_pt = GameObject.Find("RightHandAnchor").transform.position;
