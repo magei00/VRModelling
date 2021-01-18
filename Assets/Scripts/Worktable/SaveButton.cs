@@ -62,7 +62,7 @@ namespace Controls
             Material material = component.material;
             material.color = Color.blue;
 
-            WorktableController _worktableController = transform.parent.parent.gameObject.GetComponent<WorktableController>();
+            WorktableController _worktableController = transform.root.gameObject.GetComponent<WorktableController>();
             bool success = _worktableController.SaveMesh(transform.parent.name);
 
             //ScreenController _screenController = UIPanel.GetComponent<ScreenController>();
