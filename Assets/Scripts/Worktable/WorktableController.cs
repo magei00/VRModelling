@@ -126,7 +126,13 @@ public class WorktableController : MonoBehaviour
     public bool LoadMesh(string filename)
     {
         Debug.Log("worktableController here... trying to load..." + " " + filename);
+
+
+#if UNITY_STANDALONE && !UNITY_EDITOR
+        filename = String.Format("Saved/{0}.obj", filename);
+#else
         filename = String.Format("Assets/Models/Saved/{0}.obj", filename);
+#endif
         _extrudableMesh._manifold = new Manifold();
         var manifold = new Manifold();
 
@@ -143,7 +149,12 @@ public class WorktableController : MonoBehaviour
 
     public bool SaveMesh(string fname)
     {
+#if UNITY_STANDALONE && !UNITY_EDITOR
+        string fileWithPath = String.Format("Saved/{0}.obj", fname);
+#else
         string fileWithPath = String.Format("Assets/Models/Saved/{0}.obj", fname);
+#endif
+
 
         bool saved = _extrudableMesh._manifold.SaveToOBJ(fileWithPath);
       
