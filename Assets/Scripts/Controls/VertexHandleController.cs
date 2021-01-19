@@ -211,6 +211,7 @@ namespace Controls
                 lineObject.transform.parent = ControlsManager.Instance.transform;
                 lineObject.transform.localPosition = new Vector3(0,0,0);
                 lineObject.transform.localRotation = new Quaternion(0,0,0,0);
+                lineObject.transform.localScale = new Vector3(1, 1, 1);
 
                 LineRenderer lr = lineObject.GetComponent<LineRenderer>();
                 lr.enabled = true;
@@ -227,6 +228,7 @@ namespace Controls
                 Vector3 yOffset = new Vector3(0, 0.0f, 0);
                 lr.SetPosition(0, p1 + yOffset + direction * 10);
                 lr.SetPosition(1, p2 + yOffset + direction * -10);
+                
                 
             }
         }
