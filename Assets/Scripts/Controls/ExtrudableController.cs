@@ -93,7 +93,7 @@ namespace Controls
         public override void Interact()
         {
             updateInFrame = Time.frameCount;
-            handTransform = _controllerCollider.GetComponentInParent<OvrAvatarHand>().transform;
+            handTransform = _controllerCollider.transform.parent.parent;
             activeControllers.Add(_controller.GetComponent<GrabControl>());
 
 

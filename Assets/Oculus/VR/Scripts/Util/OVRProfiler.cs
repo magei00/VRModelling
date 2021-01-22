@@ -1,3 +1,15 @@
+/************************************************************************************
+Copyright : Copyright (c) Facebook Technologies, LLC and its affiliates. All rights reserved.
+
+Your use of this SDK or tool is subject to the Oculus SDK License Agreement, available at
+https://developer.oculus.com/licenses/oculussdk/
+
+Unless required by applicable law or agreed to in writing, the Utilities SDK distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ANY KIND, either express or implied. See the License for the specific language governing
+permissions and limitations under the License.
+************************************************************************************/
+
 #if UNITY_EDITOR
 
 using UnityEngine;
@@ -9,9 +21,7 @@ public class OVRProfiler : EditorWindow
 {
 	enum TargetPlatform
 	{
-		OculusGo,
-		GearVR,
-		SantaCruz,
+		OculusQuest,
 		OculusRift
 	};
 
@@ -19,13 +29,13 @@ public class OVRProfiler : EditorWindow
 	private Vector2 mScrollPosition;
 	static private TargetPlatform mTargetPlatform;
 
-	[MenuItem("Tools/Oculus/OVR Profiler")]
+	[MenuItem("Oculus/Tools/OVR Profiler")]
 	static void Init()
 	{
 		// Get existing open window or if none, make a new one:
 		EditorWindow.GetWindow(typeof(OVRProfiler));
 #if UNITY_ANDROID
-		mTargetPlatform = TargetPlatform.OculusGo;
+		mTargetPlatform = TargetPlatform.OculusQuest;
 #else
 		mTargetPlatform = TargetPlatform.OculusRift;
 #endif
@@ -36,7 +46,7 @@ public class OVRProfiler : EditorWindow
 		GUILayout.Label("OVR Profiler", EditorStyles.boldLabel);
 		string[] options = new string[]
 		{
-			"Oculus Go", "Gear VR", "Santa Cruz", "Oculus Rift",
+			"Oculus Quest", "Oculus Rift",
 		};
 		mTargetPlatform = (TargetPlatform)EditorGUILayout.Popup("Target Oculus Platform", (int)mTargetPlatform, options);
 

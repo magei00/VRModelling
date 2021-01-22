@@ -1,22 +1,13 @@
 /************************************************************************************
+Copyright : Copyright (c) Facebook Technologies, LLC and its affiliates. All rights reserved.
 
-Copyright   :   Copyright 2017 Oculus VR, LLC. All Rights reserved.
+Your use of this SDK or tool is subject to the Oculus SDK License Agreement, available at
+https://developer.oculus.com/licenses/oculussdk/
 
-Licensed under the Oculus VR Rift SDK License Version 3.4.1 (the "License");
-you may not use the Oculus VR Rift SDK except in compliance with the License,
-which is provided at the time of installation or download, or which
-otherwise accompanies this software in either electronic or hard copy form.
-
-You may obtain a copy of the License at
-
-https://developer.oculus.com/licenses/sdk-3.4.1
-
-Unless required by applicable law or agreed to in writing, the Oculus VR SDK
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
+Unless required by applicable law or agreed to in writing, the Utilities SDK distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ANY KIND, either express or implied. See the License for the specific language governing
+permissions and limitations under the License.
 ************************************************************************************/
 
 using System.Collections.Generic;
@@ -33,12 +24,21 @@ public class OVRGrabber : MonoBehaviour
     public float grabEnd = 0.35f;
 
     // Demonstrates parenting the held object to the hand's transform when grabbed.
-    // When false, the grabbed object is moved every FixedUpdate using MovePosition. 
+    // When false, the grabbed object is moved every FixedUpdate using MovePosition.
     // Note that MovePosition is required for proper physics simulation. If you set this to true, you can
     // easily observe broken physics simulation by, for example, moving the bottom cube of a stacked
     // tower and noting a complete loss of friction.
     [SerializeField]
     protected bool m_parentHeldObject = false;
+
+	// If true, this script will move the hand to the transform specified by m_parentTransform, using MovePosition in
+	// Update. This allows correct physics behavior, at the cost of some latency. In this usage scenario, you
+	// should NOT parent the hand to the hand anchor.
+	// (If m_moveHandPosition is false, this script will NOT update the game object's position.
+	// The hand gameObject can simply be attached to the hand anchor, which updates position in LateUpdate,
+    // gaining us a few ms of reduced latency.)
+    [SerializeField]
+    protected bool m_moveHandPosition = false;
 
     // Child/attached transforms of the grabber, indicating where to snap held objects to (if you snap them).
     // Also used for ranking grab targets in case of multiple candidates.
@@ -52,10 +52,16 @@ public class OVRGrabber : MonoBehaviour
     [SerializeField]
     protected OVRInput.Controller m_controller;
 
+	// You can set this explicitly in the inspector if you're using m_moveHandPosition.
+	// Otherwise, you should typically leave this null and simply parent the hand to the hand anchor
+	// in your scene, using Unity's inspector.
     [SerializeField]
     protected Transform m_parentTransform;
 
-    protected bool m_grabVolumeEnabled = true;
+    [SerializeField]
+    protected GameObject m_player;
+
+	protected bool m_grabVolumeEnabled = true;
     protected Vector3 m_lastPos;
     protected Quaternion m_lastRot;
     protected Quaternion m_anchorOffsetRotation;
@@ -65,7 +71,7 @@ public class OVRGrabber : MonoBehaviour
     protected Vector3 m_grabbedObjectPosOff;
     protected Quaternion m_grabbedObjectRotOff;
 	protected Dictionary<OVRGrabbable, int> m_grabCandidates = new Dictionary<OVRGrabbable, int>();
-	protected bool operatingWithoutOVRCameraRig = true;
+	protected bool m_operatingWithoutOVRCameraRig = true;
 
     /// <summary>
     /// The currently grabbed object.
@@ -92,17 +98,16 @@ public class OVRGrabber : MonoBehaviour
         m_anchorOffsetPosition = transform.localPosition;
         m_anchorOffsetRotation = transform.localRotation;
 
-		// If we are being used with an OVRCameraRig, let it drive input updates, which may come from Update or FixedUpdate.
-
-		OVRCameraRig rig = null;
-		if (transform.parent != null && transform.parent.parent != null)
-			rig = transform.parent.parent.GetComponent<OVRCameraRig>();
-		
-		if (rig != null)
-		{
-			rig.UpdatedAnchors += (r) => {OnUpdatedAnchors();};
-			operatingWithoutOVRCameraRig = false;
-		}
+        if(!m_moveHandPosition)
+        {
+		    // If we are being used with an OVRCameraRig, let it drive input updates, which may come from Update or FixedUpdate.
+		    OVRCameraRig rig = transform.GetComponentInParent<OVRCameraRig>();
+		    if (rig != null)
+		    {
+			    rig.UpdatedAnchors += (r) => {OnUpdatedAnchors();};
+			    m_operatingWithoutOVRCameraRig = false;
+		    }
+        }
     }
 
     protected virtual void Start()
@@ -111,41 +116,48 @@ public class OVRGrabber : MonoBehaviour
         m_lastRot = transform.rotation;
         if(m_parentTransform == null)
         {
-            if(gameObject.transform.parent != null)
-            {
-                m_parentTransform = gameObject.transform.parent.transform;
-            }
-            else
-            {
-                m_parentTransform = new GameObject().transform;
-                m_parentTransform.position = Vector3.zero;
-                m_parentTransform.rotation = Quaternion.identity;
-            }
+			m_parentTransform = gameObject.transform;
         }
+		// We're going to setup the player collision to ignore the hand collision.
+		SetPlayerIgnoreCollision(gameObject, true);
     }
 
-	void FixedUpdate()
-	{
-		if (operatingWithoutOVRCameraRig)
-			OnUpdatedAnchors();
+	// Using Update instead of FixedUpdate. Doing this in FixedUpdate causes visible judder even with
+	// somewhat high tick rates, because variable numbers of ticks per frame will give hand poses of
+	// varying recency. We want a single hand pose sampled at the same time each frame.
+	// Note that this can lead to its own side effects. For example, if m_parentHeldObject is false, the
+	// grabbed objects will be moved with MovePosition. If this is called in Update while the physics
+	// tick rate is dramatically different from the application frame rate, other objects touched by
+	// the held object will see an incorrect velocity (because the move will occur over the time of the
+	// physics tick, not the render tick), and will respond to the incorrect velocity with potentially
+	// visible artifacts.
+    virtual public void Update()
+    {
+		if (m_operatingWithoutOVRCameraRig)
+        {
+		    OnUpdatedAnchors();
+        }
 	}
 
     // Hands follow the touch anchors by calling MovePosition each frame to reach the anchor.
-    // This is done instead of parenting to achieve workable physics. If you don't require physics on 
+    // This is done instead of parenting to achieve workable physics. If you don't require physics on
     // your hands or held objects, you may wish to switch to parenting.
     void OnUpdatedAnchors()
     {
-        Vector3 handPos = OVRInput.GetLocalControllerPosition(m_controller);
-        Quaternion handRot = OVRInput.GetLocalControllerRotation(m_controller);
-        Vector3 destPos = m_parentTransform.TransformPoint(m_anchorOffsetPosition + handPos);
-        Quaternion destRot = m_parentTransform.rotation * handRot * m_anchorOffsetRotation;
-        GetComponent<Rigidbody>().MovePosition(destPos);
-        GetComponent<Rigidbody>().MoveRotation(destRot);
+        Vector3 destPos = m_parentTransform.TransformPoint(m_anchorOffsetPosition);
+        Quaternion destRot = m_parentTransform.rotation * m_anchorOffsetRotation;
+
+        if (m_moveHandPosition)
+        {
+            GetComponent<Rigidbody>().MovePosition(destPos);
+            GetComponent<Rigidbody>().MoveRotation(destRot);
+        }
 
         if (!m_parentHeldObject)
         {
             MoveGrabbedObject(destPos, destRot);
         }
+
         m_lastPos = transform.position;
         m_lastRot = transform.rotation;
 
@@ -289,11 +301,16 @@ public class OVRGrabber : MonoBehaviour
                 m_grabbedObjectRotOff = relOri;
             }
 
-            // Note: force teleport on grab, to avoid high-speed travel to dest which hits a lot of other objects at high
+            // NOTE: force teleport on grab, to avoid high-speed travel to dest which hits a lot of other objects at high
             // speed and sends them flying. The grabbed object may still teleport inside of other objects, but fixing that
             // is beyond the scope of this demo.
             MoveGrabbedObject(m_lastPos, m_lastRot, true);
-            if(m_parentHeldObject)
+
+            // NOTE: This is to get around having to setup collision layers, but in your own project you might
+            // choose to remove this line in favor of your own collision layer setup.
+            SetPlayerIgnoreCollision(m_grabbedObj.gameObject, true);
+
+            if (m_parentHeldObject)
             {
                 m_grabbedObj.transform.parent = transform;
             }
@@ -376,4 +393,22 @@ public class OVRGrabber : MonoBehaviour
             GrabbableRelease(Vector3.zero, Vector3.zero);
         }
     }
+
+	protected void SetPlayerIgnoreCollision(GameObject grabbable, bool ignore)
+	{
+		if (m_player != null)
+		{
+			Collider[] playerColliders = m_player.GetComponentsInChildren<Collider>();
+			foreach (Collider pc in playerColliders)
+			{
+				Collider[] colliders = grabbable.GetComponentsInChildren<Collider>();
+				foreach (Collider c in colliders)
+				{
+                    if(!c.isTrigger && !pc.isTrigger)
+					    Physics.IgnoreCollision(c, pc, ignore);
+				}
+			}
+		}
+	}
 }
+

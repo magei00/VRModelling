@@ -1,29 +1,20 @@
 /************************************************************************************
+Copyright : Copyright (c) Facebook Technologies, LLC and its affiliates. All rights reserved.
 
-Copyright   :   Copyright 2017 Oculus VR, LLC. All Rights reserved.
+Your use of this SDK or tool is subject to the Oculus SDK License Agreement, available at
+https://developer.oculus.com/licenses/oculussdk/
 
-Licensed under the Oculus VR Rift SDK License Version 3.4.1 (the "License");
-you may not use the Oculus VR Rift SDK except in compliance with the License,
-which is provided at the time of installation or download, or which
-otherwise accompanies this software in either electronic or hard copy form.
-
-You may obtain a copy of the License at
-
-https://developer.oculus.com/licenses/sdk-3.4.1
-
-Unless required by applicable law or agreed to in writing, the Oculus VR SDK
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
+Unless required by applicable law or agreed to in writing, the Utilities SDK distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ANY KIND, either express or implied. See the License for the specific language governing
+permissions and limitations under the License.
 ************************************************************************************/
 
 using UnityEngine;
 using System.Collections;
 
 /// <summary>
-/// Sample that allows you to play with various VR settings. 
+/// Sample that allows you to play with various VR settings.
 /// </summary>
 public class OVRSceneSampleController : MonoBehaviour
 {
@@ -36,7 +27,7 @@ public class OVRSceneSampleController : MonoBehaviour
     /// An optional texture that appears before the menu fades in.
     /// </summary>
     public Texture fadeInTexture = null;
-    
+
     /// <summary>
     /// Controls how quickly the player's speed and rotation change based on input.
     /// </summary>
@@ -85,7 +76,7 @@ public class OVRSceneSampleController : MonoBehaviour
         else
         {
             cameraController = cameraControllers[0];
-        }       
+        }
 
         // Find player controller
         OVRPlayerController[] playerControllers;
@@ -110,10 +101,10 @@ public class OVRSceneSampleController : MonoBehaviour
     /// </summary>
     void Start()
     {
-        // Make sure to hide cursor 
+        // Make sure to hide cursor
         if (Application.isEditor == false)
         {
-			Cursor.visible = false; 
+			Cursor.visible = false;
 			Cursor.lockState = CursorLockMode.Locked;
         }
 
@@ -123,7 +114,7 @@ public class OVRSceneSampleController : MonoBehaviour
             // Add a GridCube component to this object
             gridCube = gameObject.AddComponent<OVRGridCube>();
             gridCube.SetOVRCameraController(ref cameraController);
-        } 
+        }
     }
 
 
@@ -131,7 +122,7 @@ public class OVRSceneSampleController : MonoBehaviour
     /// Update this instance.
     /// </summary>
     void Update()
-    {           
+    {
         // Recenter pose
         UpdateRecenterPose();
 
@@ -147,11 +138,7 @@ public class OVRSceneSampleController : MonoBehaviour
             Screen.fullScreen = !Screen.fullScreen;
 
         if (Input.GetKeyDown(KeyCode.M))
-#if UNITY_2017_2_OR_NEWER
 			UnityEngine.XR.XRSettings.showDeviceView = !UnityEngine.XR.XRSettings.showDeviceView;
-#else
-			UnityEngine.VR.VRSettings.showDeviceView = !UnityEngine.VR.VRSettings.showDeviceView;
-#endif
 
 #if !UNITY_ANDROID || UNITY_EDITOR
         // Escape Application
@@ -169,7 +156,7 @@ public class OVRSceneSampleController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.F2))
         {
             visionMode ^= visionMode;
-            OVRManager.tracker.isEnabled = visionMode;            
+            OVRManager.tracker.isEnabled = visionMode;
         }
     }
 
@@ -205,8 +192,8 @@ public class OVRSceneSampleController : MonoBehaviour
         }
 
         playerController.SetRotationScaleMultiplier(rotationScaleMultiplier);
-    }    
-      
+    }
+
     /// <summary>
     /// Recenter pose
     /// </summary>

@@ -111,7 +111,7 @@ namespace Controls
         private void OnTriggerEnter(Collider other)
         {
 
-            if (other.transform.parent.name.StartsWith("hand") && !fromTop)
+            if (other.GetComponent<GrabControl>()!=null && !fromTop)
             {
 
                 if (other.transform.position.y > transform.position.y+ 0.0027)
@@ -132,7 +132,7 @@ namespace Controls
         private void OnTriggerExit(Collider other)
         {
 
-            if (other.transform.parent.name.StartsWith("hand"))
+            if (other.GetComponent<GrabControl>() != null)
             {
                 fromTop = false;
             }

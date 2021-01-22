@@ -1,22 +1,13 @@
-﻿/************************************************************************************
+/************************************************************************************
+Copyright : Copyright (c) Facebook Technologies, LLC and its affiliates. All rights reserved.
 
-Copyright   :   Copyright 2017 Oculus VR, LLC. All Rights reserved.
+Your use of this SDK or tool is subject to the Oculus SDK License Agreement, available at
+https://developer.oculus.com/licenses/oculussdk/
 
-Licensed under the Oculus VR Rift SDK License Version 3.4.1 (the "License");
-you may not use the Oculus VR Rift SDK except in compliance with the License,
-which is provided at the time of installation or download, or which
-otherwise accompanies this software in either electronic or hard copy form.
-
-You may obtain a copy of the License at
-
-https://developer.oculus.com/licenses/sdk-3.4.1
-
-
-Unless required by applicable law or agreed to in writing, the Oculus VR SDK
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Unless required by applicable law or agreed to in writing, the Utilities SDK distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ANY KIND, either express or implied. See the License for the specific language governing
+permissions and limitations under the License.
 
 ************************************************************************************/
 
@@ -28,8 +19,8 @@ using UnityEngine.UI;
 /// <summary>
 /// UI pointer driven by gaze input.
 /// </summary>
-public class OVRGazePointer : MonoBehaviour {
-    private Transform trailFollower; //the transform that rotates according to our movement
+public class OVRGazePointer : OVRCursor {
+    private Transform gazeIcon; //the transform that rotates according to our movement
 
     [Tooltip("Should the pointer be hidden when not over interactive objects.")]
     public bool hideByDefault = true;
@@ -45,6 +36,8 @@ public class OVRGazePointer : MonoBehaviour {
 
     [Tooltip("Angular scale of pointer")]
     public float depthScaleMultiplier = 0.03f;
+
+    public bool matchNormalOnPhysicsColliders;
 
     /// <summary>
     /// The gaze ray.
@@ -71,10 +64,6 @@ public class OVRGazePointer : MonoBehaviour {
     /// </summary>
     private int positionSetsThisFrame = 0;
     /// <summary>
-    /// Position last frame.
-    /// </summary>
-    private Vector3 lastPosition;
-    /// <summary>
     /// Last time code requested the pointer be shown. Usually when pointer passes over interactive elements.
     /// </summary>
     private float lastShowRequestTime;
@@ -83,20 +72,12 @@ public class OVRGazePointer : MonoBehaviour {
     /// </summary>
     private float lastHideRequestTime;
 
-    [Tooltip("Radius of the cursor. Used for preventing geometry intersections.")]
-    public float cursorRadius = 1f;
-
-    
-
-    // How much the gaze pointer moved in the last frame
-    public Vector3 positionDelta { private set; get; }
-
     // Optionally present GUI element displaying progress when using gaze-to-select mechanics
     private OVRProgressIndicator progressIndicator;
 
     private static OVRGazePointer _instance;
-    public static OVRGazePointer instance 
-    { 
+    public static OVRGazePointer instance
+    {
         // If there's no GazePointer already in the scene, instanciate one now.
         get
         {
@@ -107,20 +88,20 @@ public class OVRGazePointer : MonoBehaviour {
             }
             return _instance;
         }
-            
+
     }
 
 
     /// <summary>
     /// Used to determine alpha level of gaze cursor. Could also be used to determine cursor size, for example, as the cursor fades out.
     /// </summary>
-    public float visibilityStrength 
-    { 
-        get 
+    public float visibilityStrength
+    {
+        get
         {
-            // It's possible there are reasons to show the cursor - such as it hovering over some UI - and reasons to hide 
+            // It's possible there are reasons to show the cursor - such as it hovering over some UI - and reasons to hide
             // the cursor - such as another input method (e.g. mouse) being used. We take both of these in to account.
-            
+
 
             float strengthFromShowRequest;
             if (hideByDefault)
@@ -136,13 +117,13 @@ public class OVRGazePointer : MonoBehaviour {
 
             // Now consider factors requesting pointer to be hidden
             float strengthFromHideRequest;
-            
+
             strengthFromHideRequest = (lastHideRequestTime + hideTimeoutPeriod > Time.time) ? (dimOnHideRequest ? 0.1f : 0) : 1;
-            
+
 
             // Hide requests take priority
             return Mathf.Min(strengthFromShowRequest, strengthFromHideRequest);
-        } 
+        }
     }
 
     public float SelectionProgress
@@ -171,15 +152,15 @@ public class OVRGazePointer : MonoBehaviour {
 
         _instance = this;
 
-        trailFollower = transform.Find("TrailFollower");
+		gazeIcon = transform.Find("GazeIcon");
         progressIndicator = transform.GetComponent<OVRProgressIndicator>();
     }
-    
-    void Update () 
+
+    void Update ()
     {
 		if (rayTransform == null && Camera.main != null)
 			rayTransform = Camera.main.transform;
-		
+
         // Move the gaze cursor to keep it in the middle of the view
         transform.position = rayTransform.position + rayTransform.forward * depth;
 
@@ -199,12 +180,13 @@ public class OVRGazePointer : MonoBehaviour {
     /// </summary>
     /// <param name="pos"></param>
     /// <param name="normal"></param>
-    public void SetPosition(Vector3 pos, Vector3 normal)
+    public override void SetCursorStartDest(Vector3 _, Vector3 pos, Vector3 normal)
     {
         transform.position = pos;
-        
-        // Set the rotation to match the normal of the surface it's on. For the other degree of freedom (rotation around its own normal) use
-        // the direction of movement so that trail effects etc are easier
+
+        if (!matchNormalOnPhysicsColliders) normal = rayTransform.forward;
+
+        // Set the rotation to match the normal of the surface it's on.
         Quaternion newRot = transform.rotation;
         newRot.SetLookRotation(normal, rayTransform.up);
         transform.rotation = newRot;
@@ -217,20 +199,12 @@ public class OVRGazePointer : MonoBehaviour {
         transform.localScale = new Vector3(currentScale, currentScale, currentScale);
 
         positionSetsThisFrame++;
+        RequestShow();
     }
 
-    /// <summary>
-    /// SetPosition overload without normal. Just makes cursor face user
-    /// </summary>
-    /// <param name="pos"></param>
-    public void SetPosition(Vector3 pos)
+    public override void SetCursorRay(Transform ray)
     {
-        SetPosition(pos, rayTransform.forward);
-    }
-
-    public float GetCurrentRadius()
-    {
-        return cursorRadius * currentScale;
+        // We don't do anything here, because we already set this properly by default in Update.
     }
 
     void LateUpdate()
@@ -244,17 +218,11 @@ public class OVRGazePointer : MonoBehaviour {
             transform.rotation = newRot;
         }
 
-        // rotate the trail-follower to movement direction so we get a nicer particle effect
-        Quaternion trailRotation = trailFollower.rotation;
-        //we're setting the global rotation of the child (positions are in global coordinates), so premultiply the look vector with the parent transform
-        trailRotation.SetLookRotation(transform.rotation * new Vector3(0, 0, 1), (lastPosition - transform.position).normalized);
-        trailFollower.rotation = trailRotation;
+        Quaternion iconRotation = gazeIcon.rotation;
+		iconRotation.SetLookRotation(transform.rotation * new Vector3(0, 0, 1));
+		gazeIcon.rotation = iconRotation;
 
-        // Keep track of cursor movement direction
-        positionDelta = transform.position - lastPosition;
-        lastPosition = transform.position;
-        
-        positionSetsThisFrame = 0;
+		positionSetsThisFrame = 0;
     }
 
     /// <summary>

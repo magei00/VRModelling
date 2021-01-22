@@ -184,7 +184,7 @@ namespace Controls
 
                     //if (OVRInput.Get(OVRInput.NearTouch.PrimaryThumbButtons, gc.Controller) && extrudingFaces.Count() == 1)
                     //Measuring band
-                    if (OVRInput.Get(OVRInput.NearTouch.PrimaryThumbButtons, gc.Controller))
+                    if (OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, gc.Controller) >0.5)
                     {
                         tickState = true;
                     }
@@ -312,7 +312,7 @@ namespace Controls
 
         public Quaternion GetControllerRotationInLocalSpace()
         {
-            return Quaternion.Inverse(transform.parent.rotation) * _controller.transform.parent.localRotation;
+            return Quaternion.Inverse(transform.parent.rotation) * _controller.transform.parent.parent.localRotation;
         }
 
         public void AttachLatch(EdgeHandleController edgeHandle)

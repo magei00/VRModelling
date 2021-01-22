@@ -1,20 +1,18 @@
-﻿/************************************************************************************
+/************************************************************************************
 Filename    :   ONSPAmbisonicsNative.cs
 Content     :   Native interface into the Oculus Ambisonics
-Created     :   November 14, 2016
-Authors     :   Peter Giokaris
-Copyright   :   Copyright 2016 Oculus VR, Inc. All Rights reserved.
+Copyright   :   Copyright (c) Facebook Technologies, LLC and its affiliates. All rights reserved.
 
-Licensed under the Oculus VR Rift SDK License Version 3.1 (the "License"); 
-you may not use the Oculus VR Rift SDK except in compliance with the License, 
+Licensed under the Oculus SDK Version 3.5 (the "License"); 
+you may not use the Oculus SDK except in compliance with the License, 
 which is provided at the time of installation or download, or which 
 otherwise accompanies this software in either electronic or hard copy form.
 
 You may obtain a copy of the License at
 
-http://www.oculusvr.com/licenses/LICENSE-3.1 
+https://developer.oculus.com/licenses/sdk-3.5/
 
-Unless required by applicable law or agreed to in writing, the Oculus VR SDK 
+Unless required by applicable law or agreed to in writing, the Oculus SDK 
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
@@ -26,6 +24,8 @@ using System.Runtime.InteropServices;
 
 public class ONSPAmbisonicsNative : MonoBehaviour
 {
+    // this caches the audio source so that per-frame reflection isnt needed to use them.
+    AudioSource source;
 #if !UNITY_5
 	static int numFOAChannels    = 4;  // we are only dealing with 1st order Ambisonics at this time
     static int paramVSpeakerMode = 6;  // set speaker mode (OculusAmbi or VSpeaker)
@@ -70,7 +70,7 @@ public class ONSPAmbisonicsNative : MonoBehaviour
         Debug.Log("Ambisonic ERROR: Ambisonic support in Unity 2017 or higher");
 #else
 
-        AudioSource source = GetComponent<AudioSource>();
+        source = GetComponent<AudioSource>();
 
         currentStatus = ovrAmbisonicsNativeStatus.Uninitialized;
 
@@ -108,8 +108,6 @@ public class ONSPAmbisonicsNative : MonoBehaviour
     /// </summary>
     void Update()
     {
-        AudioSource source = GetComponent<AudioSource>();
-
         if (source == null)
         {
             // We already caught the error in Awake so bail

@@ -42,7 +42,7 @@ namespace Oculus.Platform
       {
         if (!String.IsNullOrEmpty(configAppID))
         {
-          Debug.LogWarningFormat("The 'Oculus App Id ({0})' field in 'Oculus Platform/Edit Settings' is clobbering appId ({1}) that you passed in to Platform.Core.Init.  You should only specify this in one place.  We recommend the menu location.", configAppID, appId);
+          Debug.LogWarningFormat("The 'Oculus App Id ({0})' field in 'Oculus Platform/Edit Settings' is being overridden by the App Id ({1}) that you passed in to Platform.Core.Initialize.  You should only specify this in one place.  We recommend the menu location.", configAppID, appId);
         }
       }
       return appId;
@@ -143,10 +143,13 @@ namespace Oculus.Platform
     }
   }
 
-  public static class ApplicationLifecycle
+  public static partial class ApplicationLifecycle
   {
     public static Models.LaunchDetails GetLaunchDetails() {
       return new Models.LaunchDetails(CAPI.ovr_ApplicationLifecycle_GetLaunchDetails());
+    }
+    public static void LogDeeplinkResult(string trackingID, LaunchResult result) {
+      CAPI.ovr_ApplicationLifecycle_LogDeeplinkResult(trackingID, result);
     }
   }
 
@@ -169,55 +172,13 @@ namespace Oculus.Platform
       return null;
     }
 
-    public static void SetUpdateNotificationCallback(Message<Models.Room>.Callback callback)
-    {
-        Callback.SetNotificationCallback(
-          Message.MessageType.Notification_Room_RoomUpdate,
-          callback
-        );
-    }
-
     [Obsolete("Deprecated in favor of SetRoomInviteAcceptedNotificationCallback")]
     public static void SetRoomInviteNotificationCallback(Message<string>.Callback callback)
     {
-        Callback.SetNotificationCallback(
-          Message.MessageType.Notification_Room_InviteAccepted,
-          callback
-        );
-    }
-
-    // Be notified when someone you've invited has accepted your invitation.
-    public static void SetRoomInviteAcceptedNotificationCallback(Message<string>.Callback callback)
-    {
-      Callback.SetNotificationCallback(
-        Message.MessageType.Notification_Room_InviteAccepted,
-        callback
-      );
-    }
-
-    // Be notified when you've received an invitation to a room from another player.
-    // You can also poll for room invites using Notifications.GetRoomInviteNotifications.
-    public static void SetRoomInviteReceivedNotificationCallback(Message<Models.RoomInviteNotification>.Callback callback)
-    {
-      Callback.SetNotificationCallback(
-        Message.MessageType.Notification_Room_InviteReceived,
-        callback
-      );
+      SetRoomInviteAcceptedNotificationCallback(callback);
     }
 
   }
-
-  public static partial class Livestreaming
-  {
-    public static void SetStatusUpdateNotificationCallback(Message<Models.LivestreamingStatus>.Callback callback)
-    {
-      Callback.SetNotificationCallback(
-        Message.MessageType.Notification_Livestreaming_StatusChange,
-        callback
-      );
-    }
-  }
-
 
   public static partial class Matchmaking
   {
@@ -310,14 +271,6 @@ namespace Oculus.Platform
       return null;
     }
 
-    public static void SetMatchFoundNotificationCallback(Message<Models.Room>.Callback callback)
-    {
-      Callback.SetNotificationCallback(
-        Message.MessageType.Notification_Matchmaking_MatchFound,
-        callback
-      );
-    }
-
     public static Request<Models.MatchmakingStats> GetStats(string pool, uint maxLevel, MatchmakingStatApproach approach = MatchmakingStatApproach.Trailing)
     {
       if (Core.IsInitialized())
@@ -329,7 +282,7 @@ namespace Oculus.Platform
     }
   }
 
-  public static class Net
+  public static partial class Net
   {
     public static Packet ReadPacket()
     {
@@ -424,22 +377,6 @@ namespace Oculus.Platform
 
       return null;
     }
-
-    public static void SetPeerConnectRequestCallback(Message<Models.NetworkingPeer>.Callback callback)
-    {
-      Callback.SetNotificationCallback(
-        Message.MessageType.Notification_Networking_PeerConnectRequest,
-        callback
-      );
-    }
-
-    public static void SetConnectionStateChangedCallback(Message<Models.NetworkingPeer>.Callback callback)
-    {
-      Callback.SetNotificationCallback(
-        Message.MessageType.Notification_Networking_ConnectionStateChange,
-        callback
-      );
-    }
   }
 
   public static partial class Leaderboards
@@ -459,6 +396,49 @@ namespace Oculus.Platform
       if (Core.IsInitialized())
       {
         return new Request<Models.LeaderboardEntryList>(CAPI.ovr_HTTP_GetWithMessageType(list.PreviousUrl, (int)Message.MessageType.Leaderboard_GetPreviousEntries));
+      }
+
+      return null;
+    }
+  }
+
+  public static partial class Challenges
+  {
+    public static Request<Models.ChallengeEntryList> GetNextEntries(Models.ChallengeEntryList list)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.ChallengeEntryList>(CAPI.ovr_HTTP_GetWithMessageType(list.NextUrl, (int)Message.MessageType.Challenges_GetNextEntries));
+      }
+
+      return null;
+    }
+
+    public static Request<Models.ChallengeEntryList> GetPreviousEntries(Models.ChallengeEntryList list)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.ChallengeEntryList>(CAPI.ovr_HTTP_GetWithMessageType(list.PreviousUrl, (int)Message.MessageType.Challenges_GetPreviousEntries));
+      }
+
+      return null;
+    }
+
+    public static Request<Models.ChallengeList> GetNextChallenges(Models.ChallengeList list)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.ChallengeList>(CAPI.ovr_HTTP_GetWithMessageType(list.NextUrl, (int)Message.MessageType.Challenges_GetNextChallenges));
+      }
+
+      return null;
+    }
+
+    public static Request<Models.ChallengeList> GetPreviousChallenges(Models.ChallengeList list)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.ChallengeList>(CAPI.ovr_HTTP_GetWithMessageType(list.PreviousUrl, (int)Message.MessageType.Challenges_GetPreviousChallenges));
       }
 
       return null;
@@ -488,28 +468,6 @@ namespace Oculus.Platform
       if (Core.IsInitialized())
       {
         CAPI.ovr_Voip_Stop(userID);
-      }
-    }
-
-    public static void SetVoipConnectRequestCallback(Message<Models.NetworkingPeer>.Callback callback)
-    {
-      if (Core.IsInitialized())
-      {
-        Callback.SetNotificationCallback(
-          Message.MessageType.Notification_Voip_ConnectRequest,
-          callback
-        );
-      }
-    }
-
-    public static void SetVoipStateChangeCallback(Message<Models.NetworkingPeer>.Callback callback)
-    {
-      if (Core.IsInitialized())
-      {
-        Callback.SetNotificationCallback(
-          Message.MessageType.Notification_Voip_StateChange,
-          callback
-        );
       }
     }
 
@@ -547,14 +505,38 @@ namespace Oculus.Platform
       return SystemVoipStatus.Unknown;
     }
 
-    public static void SetSystemVoipStateNotificationCallback(Message<Models.SystemVoipState>.Callback callback)
+    public static Oculus.Platform.VoipDtxState GetIsConnectionUsingDtx(UInt64 peerID)
     {
       if (Core.IsInitialized())
       {
-        Callback.SetNotificationCallback(
-          Message.MessageType.Notification_Voip_SystemVoipState,
-          callback
-        );
+        return CAPI.ovr_Voip_GetIsConnectionUsingDtx(peerID);
+      }
+      return Oculus.Platform.VoipDtxState.Unknown;
+    }
+
+    public static Oculus.Platform.VoipBitrate GetLocalBitrate(UInt64 peerID)
+    {
+      if (Core.IsInitialized())
+      {
+        return CAPI.ovr_Voip_GetLocalBitrate(peerID);
+      }
+      return Oculus.Platform.VoipBitrate.Unknown;
+    }
+
+    public static Oculus.Platform.VoipBitrate GetRemoteBitrate(UInt64 peerID)
+    {
+      if (Core.IsInitialized())
+      {
+        return CAPI.ovr_Voip_GetRemoteBitrate(peerID);
+      }
+      return Oculus.Platform.VoipBitrate.Unknown;
+    }
+
+    public static void SetNewConnectionOptions(VoipOptions voipOptions)
+    {
+      if (Core.IsInitialized())
+      {
+        CAPI.ovr_Voip_SetNewConnectionOptions((IntPtr)voipOptions);
       }
     }
   }
@@ -562,7 +544,9 @@ namespace Oculus.Platform
   public static partial class Achievements
   {
     /// Add 'count' to the achievement with the given name. This must be a COUNT
-    /// achievement.
+    /// achievement. The largest number that is supported by this method is the max
+    /// value of a signed 64-bit integer. If the number is larger than that, it is
+    /// clamped to that max value before being passed to the servers.
     ///
     public static Request<Models.AchievementUpdate> AddCount(string name, ulong count)
     {
@@ -684,11 +668,25 @@ namespace Oculus.Platform
 
   }
 
+  public static partial class ApplicationLifecycle
+  {
+    /// Sent when a launch intent is received (for both cold and warm starts). The
+    /// payload is the type of the intent. ApplicationLifecycle.GetLaunchDetails()
+    /// should be called to get the other details.
+    ///
+    public static void SetLaunchIntentChangedNotificationCallback(Message<string>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_ApplicationLifecycle_LaunchIntentChanged,
+        callback
+      );
+    }
+
+  }
+
   public static partial class AssetFile
   {
-    /// Removes an previously installed asset file from the device by its ID.
-    /// Returns an object containing the asset file ID and a success flag.
-    /// \param assetFileID The asset file ID
+    /// DEPRECATED. Use AssetFile.DeleteById()
     ///
     public static Request<Models.AssetFileDeleteResult> Delete(UInt64 assetFileID)
     {
@@ -700,10 +698,37 @@ namespace Oculus.Platform
       return null;
     }
 
-    /// Downloads an asset file by its ID on demand. Returns an object containing
-    /// filepath on the file system. Sends periodic
-    /// MessageType.Notification_AssetFile_DownloadUpdate to track the downloads.
+    /// Removes an previously installed asset file from the device by its ID.
+    /// Returns an object containing the asset ID and file name, and a success
+    /// flag.
     /// \param assetFileID The asset file ID
+    ///
+    public static Request<Models.AssetFileDeleteResult> DeleteById(UInt64 assetFileID)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.AssetFileDeleteResult>(CAPI.ovr_AssetFile_DeleteById(assetFileID));
+      }
+
+      return null;
+    }
+
+    /// Removes an previously installed asset file from the device by its name.
+    /// Returns an object containing the asset ID and file name, and a success
+    /// flag.
+    /// \param assetFileName The asset file name
+    ///
+    public static Request<Models.AssetFileDeleteResult> DeleteByName(string assetFileName)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.AssetFileDeleteResult>(CAPI.ovr_AssetFile_DeleteByName(assetFileName));
+      }
+
+      return null;
+    }
+
+    /// DEPRECATED. Use AssetFile.DownloadById()
     ///
     public static Request<Models.AssetFileDownloadResult> Download(UInt64 assetFileID)
     {
@@ -715,9 +740,37 @@ namespace Oculus.Platform
       return null;
     }
 
-    /// Cancels a previously spawned download request for an asset file by its ID.
-    /// Returns an object containing asset file ID, and the success flag.
+    /// Downloads an asset file by its ID on demand. Returns an object containing
+    /// the asset ID and filepath. Sends periodic
+    /// MessageType.Notification_AssetFile_DownloadUpdate to track the downloads.
     /// \param assetFileID The asset file ID
+    ///
+    public static Request<Models.AssetFileDownloadResult> DownloadById(UInt64 assetFileID)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.AssetFileDownloadResult>(CAPI.ovr_AssetFile_DownloadById(assetFileID));
+      }
+
+      return null;
+    }
+
+    /// Downloads an asset file by its name on demand. Returns an object containing
+    /// the asset ID and filepath. Sends periodic
+    /// {notifications.asset_file.download_update}} to track the downloads.
+    /// \param assetFileName The asset file name
+    ///
+    public static Request<Models.AssetFileDownloadResult> DownloadByName(string assetFileName)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.AssetFileDownloadResult>(CAPI.ovr_AssetFile_DownloadByName(assetFileName));
+      }
+
+      return null;
+    }
+
+    /// DEPRECATED. Use AssetFile.DownloadCancelById()
     ///
     public static Request<Models.AssetFileDownloadCancelResult> DownloadCancel(UInt64 assetFileID)
     {
@@ -729,10 +782,256 @@ namespace Oculus.Platform
       return null;
     }
 
+    /// Cancels a previously spawned download request for an asset file by its ID.
+    /// Returns an object containing the asset ID and file path, and a success
+    /// flag.
+    /// \param assetFileID The asset file ID
+    ///
+    public static Request<Models.AssetFileDownloadCancelResult> DownloadCancelById(UInt64 assetFileID)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.AssetFileDownloadCancelResult>(CAPI.ovr_AssetFile_DownloadCancelById(assetFileID));
+      }
+
+      return null;
+    }
+
+    /// Cancels a previously spawned download request for an asset file by its
+    /// name. Returns an object containing the asset ID and file path, and a
+    /// success flag.
+    /// \param assetFileName The asset file name
+    ///
+    public static Request<Models.AssetFileDownloadCancelResult> DownloadCancelByName(string assetFileName)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.AssetFileDownloadCancelResult>(CAPI.ovr_AssetFile_DownloadCancelByName(assetFileName));
+      }
+
+      return null;
+    }
+
+    /// Returns an array of objects with asset file names and their associated IDs,
+    /// and and whether it's currently installed.
+    ///
+    public static Request<Models.AssetDetailsList> GetList()
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.AssetDetailsList>(CAPI.ovr_AssetFile_GetList());
+      }
+
+      return null;
+    }
+
+    /// DEPRECATED. Use AssetFile.StatusById()
+    ///
+    public static Request<Models.AssetDetails> Status(UInt64 assetFileID)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.AssetDetails>(CAPI.ovr_AssetFile_Status(assetFileID));
+      }
+
+      return null;
+    }
+
+    /// Returns the details on a single asset: ID, file name, and whether it's
+    /// currently installed
+    /// \param assetFileID The asset file ID
+    ///
+    public static Request<Models.AssetDetails> StatusById(UInt64 assetFileID)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.AssetDetails>(CAPI.ovr_AssetFile_StatusById(assetFileID));
+      }
+
+      return null;
+    }
+
+    /// Returns the details on a single asset: ID, file name, and whether it's
+    /// currently installed
+    /// \param assetFileName The asset file name
+    ///
+    public static Request<Models.AssetDetails> StatusByName(string assetFileName)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.AssetDetails>(CAPI.ovr_AssetFile_StatusByName(assetFileName));
+      }
+
+      return null;
+    }
+
+    /// Sent to indicate download progress for asset files.
+    ///
+    public static void SetDownloadUpdateNotificationCallback(Message<Models.AssetFileDownloadUpdate>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_AssetFile_DownloadUpdate,
+        callback
+      );
+    }
+
   }
 
   public static partial class Avatar
   {
+  }
+
+  public static partial class Cal
+  {
+  }
+
+  public static partial class Challenges
+  {
+    /// Creates a new user challenge
+    ///
+    public static Request<Models.Challenge> Create(string leaderboardName, ChallengeOptions challengeOptions)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.Challenge>(CAPI.ovr_Challenges_Create(leaderboardName, (IntPtr)challengeOptions));
+      }
+
+      return null;
+    }
+
+    /// If the current user has an invite to the challenge, decline the invite
+    ///
+    public static Request<Models.Challenge> DeclineInvite(UInt64 challengeID)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.Challenge>(CAPI.ovr_Challenges_DeclineInvite(challengeID));
+      }
+
+      return null;
+    }
+
+    /// If the current user has permission, deletes a challenge
+    ///
+    public static Request Delete(UInt64 challengeID)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request(CAPI.ovr_Challenges_Delete(challengeID));
+      }
+
+      return null;
+    }
+
+    /// Gets the information for a single challenge
+    /// \param challengeID The id of the challenge whose entries to return.
+    ///
+    public static Request<Models.Challenge> Get(UInt64 challengeID)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.Challenge>(CAPI.ovr_Challenges_Get(challengeID));
+      }
+
+      return null;
+    }
+
+    /// Requests a block of challenge entries.
+    /// \param challengeID The id of the challenge whose entries to return.
+    /// \param limit Defines the maximum number of entries to return.
+    /// \param filter Allows you to restrict the returned values by friends.
+    /// \param startAt Defines whether to center the query on the user or start at the top of the challenge.
+    ///
+    public static Request<Models.ChallengeEntryList> GetEntries(UInt64 challengeID, int limit, LeaderboardFilterType filter, LeaderboardStartAt startAt)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.ChallengeEntryList>(CAPI.ovr_Challenges_GetEntries(challengeID, limit, filter, startAt));
+      }
+
+      return null;
+    }
+
+    /// Requests a block of challenge entries.
+    /// \param challengeID The id of the challenge whose entries to return.
+    /// \param limit The maximum number of entries to return.
+    /// \param afterRank The position after which to start.  For example, 10 returns challenge results starting with the 11th user.
+    ///
+    public static Request<Models.ChallengeEntryList> GetEntriesAfterRank(UInt64 challengeID, int limit, ulong afterRank)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.ChallengeEntryList>(CAPI.ovr_Challenges_GetEntriesAfterRank(challengeID, limit, afterRank));
+      }
+
+      return null;
+    }
+
+    /// Requests a block of challenge entries. Will return only entries matching
+    /// the user IDs passed in.
+    /// \param challengeID The id of the challenge whose entries to return.
+    /// \param limit Defines the maximum number of entries to return.
+    /// \param startAt Defines whether to center the query on the user or start at the top of the challenge. If this is LeaderboardStartAt.CenteredOnViewer or LeaderboardStartAt.CenteredOnViewerOrTop, then the current user's ID will be automatically added to the query.
+    /// \param userIDs Defines a list of user ids to get entries for.
+    ///
+    public static Request<Models.ChallengeEntryList> GetEntriesByIds(UInt64 challengeID, int limit, LeaderboardStartAt startAt, UInt64[] userIDs)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.ChallengeEntryList>(CAPI.ovr_Challenges_GetEntriesByIds(challengeID, limit, startAt, userIDs, (uint)(userIDs != null ? userIDs.Length : 0)));
+      }
+
+      return null;
+    }
+
+    /// Requests for a list of challenge
+    ///
+    public static Request<Models.ChallengeList> GetList(ChallengeOptions challengeOptions, int limit)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.ChallengeList>(CAPI.ovr_Challenges_GetList((IntPtr)challengeOptions, limit));
+      }
+
+      return null;
+    }
+
+    /// If the current user has permission, join the challenge
+    ///
+    public static Request<Models.Challenge> Join(UInt64 challengeID)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.Challenge>(CAPI.ovr_Challenges_Join(challengeID));
+      }
+
+      return null;
+    }
+
+    /// If the current user has permission, leave the challenge
+    ///
+    public static Request<Models.Challenge> Leave(UInt64 challengeID)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.Challenge>(CAPI.ovr_Challenges_Leave(challengeID));
+      }
+
+      return null;
+    }
+
+    /// If the current user has permission, updates a challenge information
+    ///
+    public static Request<Models.Challenge> UpdateInfo(UInt64 challengeID, ChallengeOptions challengeOptions)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.Challenge>(CAPI.ovr_Challenges_UpdateInfo(challengeID, (IntPtr)challengeOptions));
+      }
+
+      return null;
+    }
+
   }
 
   public static partial class CloudStorage
@@ -866,6 +1165,9 @@ namespace Oculus.Platform
     /// \param counter Optional. Counter used for user data or auto-deconfliction.
     /// \param extraData Optional. String data that isn't used by the platform.
     ///
+    /// <b>Error codes</b>
+    /// - \b 100: The stored version has a later timestamp than the data provided. This cloud storage bucket's conflict resolution policy is configured to use the latest timestamp, which is configurable in the developer dashboard.
+    ///
     public static Request<Models.CloudStorageUpdateResponse> Save(string bucket, string key, byte[] data, long counter, string extraData)
     {
       if (Core.IsInitialized())
@@ -876,6 +1178,27 @@ namespace Oculus.Platform
       return null;
     }
 
+  }
+
+  public static partial class CloudStorage2
+  {
+    /// Get the directory path for the current user/app pair that will be used
+    /// during cloud storage synchronization
+    ///
+    public static Request<string> GetUserDirectoryPath()
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<string>(CAPI.ovr_CloudStorage2_GetUserDirectoryPath());
+      }
+
+      return null;
+    }
+
+  }
+
+  public static partial class Colocation
+  {
   }
 
   public static partial class Entitlements
@@ -943,6 +1266,21 @@ namespace Oculus.Platform
       return null;
     }
 
+    /// Retrieve a list of Purchase that the Logged-In-User has made. This list
+    /// will only contain durable purchase (non-consumable) and is populated from a
+    /// device cache. It is recommended in all cases to use
+    /// ovr_User_GetViewerPurchases first and only check the cache if that fails.
+    ///
+    public static Request<Models.PurchaseList> GetViewerPurchasesDurableCache()
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.PurchaseList>(CAPI.ovr_IAP_GetViewerPurchasesDurableCache());
+      }
+
+      return null;
+    }
+
     /// Launch the checkout flow to purchase the existing product. Oculus Home
     /// tries handle and fix as many errors as possible. Home returns the
     /// appropriate error message and how to resolveit, if possible. Returns a
@@ -965,13 +1303,53 @@ namespace Oculus.Platform
 
   }
 
+  public static partial class LanguagePack
+  {
+    /// Returns currently installed and selected language pack for an app in the
+    /// view of the `asset_details`. Use `language` field to extract neeeded
+    /// language info. A particular language can be download and installed by a
+    /// user from the Oculus app on the application page.
+    ///
+    public static Request<Models.AssetDetails> GetCurrent()
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.AssetDetails>(CAPI.ovr_LanguagePack_GetCurrent());
+      }
+
+      return null;
+    }
+
+    /// Sets the current language to specified. The parameter is the BCP47 language
+    /// tag. If a language pack is not downloaded yet, spawns automatically the
+    /// AssetFile.DownloadByName() request, and sends periodic
+    /// MessageType.Notification_AssetFile_DownloadUpdate to track the downloads.
+    /// Once the language asset file is downloaded, call LanguagePack.GetCurrent()
+    /// to retrive the data, and use the language at runtime.
+    /// \param tag BCP47 language tag
+    ///
+    public static Request<Models.AssetFileDownloadResult> SetCurrent(string tag)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.AssetFileDownloadResult>(CAPI.ovr_LanguagePack_SetCurrent(tag));
+      }
+
+      return null;
+    }
+
+  }
+
   public static partial class Leaderboards
   {
-    /// Requests a block of Leaderboard Entries.
+    /// Requests a block of leaderboard entries.
     /// \param leaderboardName The name of the leaderboard whose entries to return.
     /// \param limit Defines the maximum number of entries to return.
     /// \param filter Allows you to restrict the returned values by friends.
     /// \param startAt Defines whether to center the query on the user or start at the top of the leaderboard.
+    ///
+    /// <b>Error codes</b>
+    /// - \b 12074: You're not yet ranked on this leaderboard.
     ///
     public static Request<Models.LeaderboardEntryList> GetEntries(string leaderboardName, int limit, LeaderboardFilterType filter, LeaderboardStartAt startAt)
     {
@@ -983,7 +1361,7 @@ namespace Oculus.Platform
       return null;
     }
 
-    /// Requests a block of leaderboard Entries.
+    /// Requests a block of leaderboard entries.
     /// \param leaderboardName The name of the leaderboard.
     /// \param limit The maximum number of entries to return.
     /// \param afterRank The position after which to start.  For example, 10 returns leaderboard results starting with the 11th user.
@@ -998,11 +1376,31 @@ namespace Oculus.Platform
       return null;
     }
 
+    /// Requests a block of leaderboard entries. Will return only entries matching
+    /// the user IDs passed in.
+    /// \param leaderboardName The name of the leaderboard whose entries to return.
+    /// \param limit Defines the maximum number of entries to return.
+    /// \param startAt Defines whether to center the query on the user or start at the top of the leaderboard. If this is LeaderboardStartAt.CenteredOnViewer or LeaderboardStartAt.CenteredOnViewerOrTop, then the current user's ID will be automatically added to the query.
+    /// \param userIDs Defines a list of user ids to get entries for.
+    ///
+    public static Request<Models.LeaderboardEntryList> GetEntriesByIds(string leaderboardName, int limit, LeaderboardStartAt startAt, UInt64[] userIDs)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.LeaderboardEntryList>(CAPI.ovr_Leaderboard_GetEntriesByIds(leaderboardName, limit, startAt, userIDs, (uint)(userIDs != null ? userIDs.Length : 0)));
+      }
+
+      return null;
+    }
+
     /// Writes a single entry to a leaderboard.
     /// \param leaderboardName The leaderboard for which to write the entry.
     /// \param score The score to write.
     /// \param extraData A 2KB custom data field that is associated with the leaderboard entry. This can be a game replay or anything that provides more detail about the entry to the viewer.
     /// \param forceUpdate If true, the score always updates.  This happens even if it is not the user's best score.
+    ///
+    /// <b>Error codes</b>
+    /// - \b 100: Parameter {parameter}: invalid user id: {user_id}
     ///
     public static Request<bool> WriteEntry(string leaderboardName, long score, byte[] extraData = null, bool forceUpdate = false)
     {
@@ -1025,6 +1423,18 @@ namespace Oculus.Platform
       if (Core.IsInitialized())
       {
         return new Request<Models.LivestreamingStatus>(CAPI.ovr_Livestreaming_GetStatus());
+      }
+
+      return null;
+    }
+
+    /// Launch the Livestreaming Flow.
+    ///
+    public static Request LaunchLivestreamingFlow()
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request(CAPI.ovr_Livestreaming_LaunchLivestreamingFlow());
       }
 
       return null;
@@ -1056,6 +1466,19 @@ namespace Oculus.Platform
       return null;
     }
 
+    /// Indicates that the livestreaming session has been updated. You can use this
+    /// information to throttle your game performance or increase CPU/GPU
+    /// performance. Use Message.GetLivestreamingStatus() to extract the updated
+    /// livestreaming status.
+    ///
+    public static void SetStatusUpdateNotificationCallback(Message<Models.LivestreamingStatus>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_Livestreaming_StatusChange,
+        callback
+      );
+    }
+
   }
 
   public static partial class Matchmaking
@@ -1063,6 +1486,10 @@ namespace Oculus.Platform
     /// DEPRECATED. Use Browse2.
     /// \param pool A BROWSE type matchmaking pool.
     /// \param customQueryData Optional. Custom query data.
+    ///
+    /// <b>Error codes</b>
+    /// - \b 100: Pool {pool_key} does not contain custom data key {key}. You can configure matchmaking custom data at https://dashboard.oculus.com/application/&lt;app_id&gt;/matchmaking
+    /// - \b 12072: Unknown pool: {pool_key}. You can configure matchmaking pools at https://dashboard.oculus.com/application/&lt;app_id&gt;/matchmaking
     ///
     public static Request<Models.MatchmakingBrowseResult> Browse(string pool, CustomQuery customQueryData = null)
     {
@@ -1080,7 +1507,7 @@ namespace Oculus.Platform
     ///
     /// Return a list of matchmaking rooms in the current pool filtered by skill
     /// and ping (if enabled). This also enqueues the user in the matchmaking
-    /// queue. When the user has made a selection, call Room.Join2() on one of the
+    /// queue. When the user has made a selection, call Rooms.Join2() on one of the
     /// rooms that was returned. If the user stops browsing, call
     /// Matchmaking.Cancel().
     ///
@@ -1089,6 +1516,10 @@ namespace Oculus.Platform
     /// OVR_MatchmakingEnqueueResult.h for details.
     /// \param pool A BROWSE type matchmaking pool.
     /// \param matchmakingOptions Additional matchmaking configuration for this request. Optional.
+    ///
+    /// <b>Error codes</b>
+    /// - \b 100: Pool {pool_key} does not contain custom data key {key}. You can configure matchmaking custom data at https://dashboard.oculus.com/application/&lt;app_id&gt;/matchmaking
+    /// - \b 12072: Unknown pool: {pool_key}. You can configure matchmaking pools at https://dashboard.oculus.com/application/&lt;app_id&gt;/matchmaking
     ///
     public static Request<Models.MatchmakingBrowseResult> Browse2(string pool, MatchmakingOptions matchmakingOptions = null)
     {
@@ -1103,6 +1534,12 @@ namespace Oculus.Platform
     /// DEPRECATED. Use Cancel2.
     /// \param pool The pool in question.
     /// \param requestHash Used to find your entry in a queue.
+    ///
+    /// <b>Error codes</b>
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is currently in another room (perhaps on another device), and thus is no longer in this room. Users can only be in one room at a time. If they are active on two different devices at once, there will be undefined behavior.
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is not in the room (or any room). Perhaps they already left, or they stopped heartbeating. If this is a test environment, make sure you are not using the deprecated initialization methods ovr_PlatformInitializeStandaloneAccessToken (C++)/StandalonePlatform.Initialize(accessToken) (C#).
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is not the owner of the room.
+    /// - \b 100: Invalid room_id: {room_id}. Either the ID is not a valid room or the user does not have permission to see or act on the room.
     ///
     public static Request Cancel(string pool, string requestHash)
     {
@@ -1123,6 +1560,12 @@ namespace Oculus.Platform
     /// the user goes offline, the user/room will be timed out of the queue within
     /// 30 seconds.
     ///
+    /// <b>Error codes</b>
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is currently in another room (perhaps on another device), and thus is no longer in this room. Users can only be in one room at a time. If they are active on two different devices at once, there will be undefined behavior.
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is not in the room (or any room). Perhaps they already left, or they stopped heartbeating. If this is a test environment, make sure you are not using the deprecated initialization methods ovr_PlatformInitializeStandaloneAccessToken (C++)/StandalonePlatform.Initialize(accessToken) (C#).
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is not the owner of the room.
+    /// - \b 100: Invalid room_id: {room_id}. Either the ID is not a valid room or the user does not have permission to see or act on the room.
+    ///
     public static Request Cancel()
     {
       if (Core.IsInitialized())
@@ -1138,6 +1581,12 @@ namespace Oculus.Platform
     /// \param maxUsers Overrides the Max Users value, which is configured in pool settings of the Developer Dashboard.
     /// \param subscribeToUpdates If true, sends a message with type MessageType.Notification_Room_RoomUpdate when the room data changes, such as when users join or leave.
     /// \param customQueryData Optional.  See "Custom criteria" section above.
+    ///
+    /// <b>Error codes</b>
+    /// - \b 100: Pool {pool_key} does not contain custom data key {key}. You can configure matchmaking custom data at https://dashboard.oculus.com/application/&lt;app_id&gt;/matchmaking
+    /// - \b 12051: Pool '{pool_key}' is configured for Quickmatch mode. In Quickmatch mode, rooms are created on users' behalf when a match is found. Specify Advanced Quickmatch or Browse mode to use this feature.
+    /// - \b 12072: Unknown pool: {pool_key}. You can configure matchmaking pools at https://dashboard.oculus.com/application/&lt;app_id&gt;/matchmaking
+    /// - \b 12089: You have asked to enqueue {num_users} users together, but this must be less than the maximum number of users in a room, {max_users}.
     ///
     public static Request<Models.MatchmakingEnqueueResultAndRoom> CreateAndEnqueueRoom(string pool, uint maxUsers, bool subscribeToUpdates = false, CustomQuery customQueryData = null)
     {
@@ -1157,10 +1606,16 @@ namespace Oculus.Platform
     /// method. But, if you do not wish to automatically enqueue the room, you can
     /// call CreateRoom2 instead.
     ///
-    /// Visit https://developer2.oculus.com/application/[YOUR_APP_ID]/matchmaking
-    /// to set up pools and queries
+    /// Visit https://dashboard.oculus.com/application/[YOUR_APP_ID]/matchmaking to
+    /// set up pools and queries
     /// \param pool The matchmaking pool to use, which is defined for the app.
     /// \param matchmakingOptions Additional matchmaking configuration for this request. Optional.
+    ///
+    /// <b>Error codes</b>
+    /// - \b 100: Pool {pool_key} does not contain custom data key {key}. You can configure matchmaking custom data at https://dashboard.oculus.com/application/&lt;app_id&gt;/matchmaking
+    /// - \b 12051: Pool '{pool_key}' is configured for Quickmatch mode. In Quickmatch mode, rooms are created on users' behalf when a match is found. Specify Advanced Quickmatch or Browse mode to use this feature.
+    /// - \b 12072: Unknown pool: {pool_key}. You can configure matchmaking pools at https://dashboard.oculus.com/application/&lt;app_id&gt;/matchmaking
+    /// - \b 12089: You have asked to enqueue {num_users} users together, but this must be less than the maximum number of users in a room, {max_users}.
     ///
     public static Request<Models.MatchmakingEnqueueResultAndRoom> CreateAndEnqueueRoom2(string pool, MatchmakingOptions matchmakingOptions = null)
     {
@@ -1197,8 +1652,8 @@ namespace Oculus.Platform
     /// creation, you can call EnqueueRoom. Consider using CreateAndEnqueueRoom
     /// instead.
     ///
-    /// Visit https://developer2.oculus.com/application/[YOUR_APP_ID]/matchmaking
-    /// to set up pools and queries
+    /// Visit https://dashboard.oculus.com/application/[YOUR_APP_ID]/matchmaking to
+    /// set up pools and queries
     /// \param pool The matchmaking pool to use, which is defined for the app.
     /// \param matchmakingOptions Additional matchmaking configuration for this request. Optional.
     ///
@@ -1216,6 +1671,10 @@ namespace Oculus.Platform
     /// \param pool The pool to enqueue in.
     /// \param customQueryData Optional.  See "Custom criteria" section above.
     ///
+    /// <b>Error codes</b>
+    /// - \b 100: Pool {pool_key} does not contain custom data key {key}. You can configure matchmaking custom data at https://dashboard.oculus.com/application/&lt;app_id&gt;/matchmaking
+    /// - \b 12072: Unknown pool: {pool_key}. You can configure matchmaking pools at https://dashboard.oculus.com/application/&lt;app_id&gt;/matchmaking
+    ///
     public static Request<Models.MatchmakingEnqueueResult> Enqueue(string pool, CustomQuery customQueryData = null)
     {
       if (Core.IsInitialized())
@@ -1232,13 +1691,17 @@ namespace Oculus.Platform
     ///
     /// Enqueue yourself to await an available matchmaking room. The platform
     /// returns a MessageType.Notification_Matchmaking_MatchFound message when a
-    /// match is found. Call Room.Join2() on the returned room. The response
+    /// match is found. Call Rooms.Join2() on the returned room. The response
     /// contains useful information to display to the user to set expectations for
     /// how long it will take to get a match.
     ///
     /// If the user stops waiting, call Matchmaking.Cancel().
     /// \param pool The pool to enqueue in.
     /// \param matchmakingOptions Additional matchmaking configuration for this request. Optional.
+    ///
+    /// <b>Error codes</b>
+    /// - \b 100: Pool {pool_key} does not contain custom data key {key}. You can configure matchmaking custom data at https://dashboard.oculus.com/application/&lt;app_id&gt;/matchmaking
+    /// - \b 12072: Unknown pool: {pool_key}. You can configure matchmaking pools at https://dashboard.oculus.com/application/&lt;app_id&gt;/matchmaking
     ///
     public static Request<Models.MatchmakingEnqueueResult> Enqueue2(string pool, MatchmakingOptions matchmakingOptions = null)
     {
@@ -1253,6 +1716,13 @@ namespace Oculus.Platform
     /// DEPRECATED. Please use Matchmaking.EnqueueRoom2() instead.
     /// \param roomID Returned either from MessageType.Notification_Matchmaking_MatchFound or from Matchmaking.CreateRoom().
     /// \param customQueryData Optional.  See the "Custom criteria" section above.
+    ///
+    /// <b>Error codes</b>
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is currently in another room (perhaps on another device), and thus is no longer in this room. Users can only be in one room at a time. If they are active on two different devices at once, there will be undefined behavior.
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is not in the room (or any room). Perhaps they already left, or they stopped heartbeating. If this is a test environment, make sure you are not using the deprecated initialization methods ovr_PlatformInitializeStandaloneAccessToken (C++)/StandalonePlatform.Initialize(accessToken) (C#).
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is not the owner of the room.
+    /// - \b 100: Invalid room_id: {room_id}. Either the ID is not a valid room or the user does not have permission to see or act on the room.
+    /// - \b 12051: Pool '{pool_key}' is configured for Quickmatch mode. In Quickmatch mode, rooms are created on users' behalf when a match is found. Specify Advanced Quickmatch or Browse mode to use this feature.
     ///
     public static Request<Models.MatchmakingEnqueueResult> EnqueueRoom(UInt64 roomID, CustomQuery customQueryData = null)
     {
@@ -1276,6 +1746,13 @@ namespace Oculus.Platform
     /// If the user stops waiting, call Matchmaking.Cancel().
     /// \param roomID Returned either from MessageType.Notification_Matchmaking_MatchFound or from Matchmaking.CreateRoom().
     /// \param matchmakingOptions Additional matchmaking configuration for this request. Optional.
+    ///
+    /// <b>Error codes</b>
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is currently in another room (perhaps on another device), and thus is no longer in this room. Users can only be in one room at a time. If they are active on two different devices at once, there will be undefined behavior.
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is not in the room (or any room). Perhaps they already left, or they stopped heartbeating. If this is a test environment, make sure you are not using the deprecated initialization methods ovr_PlatformInitializeStandaloneAccessToken (C++)/StandalonePlatform.Initialize(accessToken) (C#).
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is not the owner of the room.
+    /// - \b 100: Invalid room_id: {room_id}. Either the ID is not a valid room or the user does not have permission to see or act on the room.
+    /// - \b 12051: Pool '{pool_key}' is configured for Quickmatch mode. In Quickmatch mode, rooms are created on users' behalf when a match is found. Specify Advanced Quickmatch or Browse mode to use this feature.
     ///
     public static Request<Models.MatchmakingEnqueueResult> EnqueueRoom2(UInt64 roomID, MatchmakingOptions matchmakingOptions = null)
     {
@@ -1320,9 +1797,13 @@ namespace Oculus.Platform
     ///
     /// For pools with skill-based matching. See overview documentation above.
     ///
-    /// Call after calling Room.Join2() when the players are present to begin a
+    /// Call after calling Rooms.Join2() when the players are present to begin a
     /// rated match for which you plan to report the results (using
     /// Matchmaking.ReportResultInsecure()).
+    ///
+    /// <b>Error codes</b>
+    /// - \b 100: There is no active match associated with the room {room_id}.
+    /// - \b 100: You can only start matches, report matches, and track skill ratings in matchmaking rooms. {room_id} is a room, but it is not a matchmaking room.
     ///
     public static Request StartMatch(UInt64 roomID)
     {
@@ -1332,6 +1813,18 @@ namespace Oculus.Platform
       }
 
       return null;
+    }
+
+    /// Indicates that a match has been found, for example after calling
+    /// Matchmaking.Enqueue(). Use Message.GetRoom() to extract the matchmaking
+    /// room.
+    ///
+    public static void SetMatchFoundNotificationCallback(Message<Models.Room>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_Matchmaking_MatchFound,
+        callback
+      );
     }
 
   }
@@ -1357,6 +1850,69 @@ namespace Oculus.Platform
       }
 
       return null;
+    }
+
+  }
+
+  public static partial class NetSync
+  {
+    /// Sent when the status of a connection has changed.
+    ///
+    public static void SetConnectionStatusChangedNotificationCallback(Message<Models.NetSyncConnection>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_NetSync_ConnectionStatusChanged,
+        callback
+      );
+    }
+
+    /// Sent when the list of known connected sessions has changed. Contains the
+    /// new list of sessions.
+    ///
+    public static void SetSessionsChangedNotificationCallback(Message<Models.NetSyncSessionsChangedNotification>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_NetSync_SessionsChanged,
+        callback
+      );
+    }
+
+  }
+
+  public static partial class Net
+  {
+    /// Indicates that a connection has been established or there's been an error.
+    /// Use NetworkingPeer.GetState() to get the result; as above,
+    /// NetworkingPeer.GetID() returns the ID of the peer this message is for.
+    ///
+    public static void SetConnectionStateChangedCallback(Message<Models.NetworkingPeer>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_Networking_ConnectionStateChange,
+        callback
+      );
+    }
+
+    /// Indicates that another user is attempting to establish a P2P connection
+    /// with us. Use NetworkingPeer.GetID() to extract the ID of the peer.
+    ///
+    public static void SetPeerConnectRequestCallback(Message<Models.NetworkingPeer>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_Networking_PeerConnectRequest,
+        callback
+      );
+    }
+
+    /// Generated in response to Net.Ping(). Either contains ping time in
+    /// microseconds or indicates that there was a timeout.
+    ///
+    public static void SetPingResultNotificationCallback(Message<Models.PingResult>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_Networking_PingResult,
+        callback
+      );
     }
 
   }
@@ -1402,6 +1958,56 @@ namespace Oculus.Platform
       if (Core.IsInitialized())
       {
         return new Request<Models.Party>(CAPI.ovr_Party_GetCurrent());
+      }
+
+      return null;
+    }
+
+    /// Indicates that party has been updated
+    ///
+    public static void SetPartyUpdateNotificationCallback(Message<Models.PartyUpdateNotification>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_Party_PartyUpdate,
+        callback
+      );
+    }
+
+  }
+
+  public static partial class RichPresence
+  {
+    /// Clear rich presence for running app
+    ///
+    public static Request Clear()
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request(CAPI.ovr_RichPresence_Clear());
+      }
+
+      return null;
+    }
+
+    /// Gets all the destinations that the presence can be set to
+    ///
+    public static Request<Models.DestinationList> GetDestinations()
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.DestinationList>(CAPI.ovr_RichPresence_GetDestinations());
+      }
+
+      return null;
+    }
+
+    /// Set rich presence for running app
+    ///
+    public static Request Set(RichPresenceOptions richPresenceOptions)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request(CAPI.ovr_RichPresence_Set((IntPtr)richPresenceOptions));
       }
 
       return null;
@@ -1562,9 +2168,14 @@ namespace Oculus.Platform
     /// Invites a user to the specified room. They will receive a notification via
     /// MessageType.Notification_Room_InviteReceived if they are in your game,
     /// and/or they can poll for room invites using
-    /// Notification.GetRoomInviteNotifications().
+    /// Notifications.GetRoomInviteNotifications().
     /// \param roomID The ID of your current room.
-    /// \param inviteToken A user's invite token, returned by Room.GetInvitableUsers().
+    /// \param inviteToken A user's invite token, returned by Rooms.GetInvitableUsers().
+    ///
+    /// <b>Error codes</b>
+    /// - \b 100: The invite token has expired, the user will need to be reinvited to the room.
+    /// - \b 100: The target user cannot join you in your current experience
+    /// - \b 100: You cannot send an invite to a room you are not in
     ///
     public static Request<Models.Room> InviteUser(UInt64 roomID, string inviteToken)
     {
@@ -1580,6 +2191,13 @@ namespace Oculus.Platform
     /// \param roomID The room to join.
     /// \param subscribeToUpdates If true, sends a message with type MessageType.Notification_Room_RoomUpdate when room data changes, such as when users join or leave.
     ///
+    /// <b>Error codes</b>
+    /// - \b 10: The room you're attempting to join is currently locked. Please try again later.
+    /// - \b 10: You don't have permission to enter this room. You may need to be invited first.
+    /// - \b 100: Invalid room_id: {room_id}. Either the ID is not a valid room or the user does not have permission to see or act on the room.
+    /// - \b 100: The room you're attempting to join is full. Please try again later.
+    /// - \b 100: This game isn't available. If it already started or was canceled, you can host a new game at any point.
+    ///
     public static Request<Models.Room> Join(UInt64 roomID, bool subscribeToUpdates = false)
     {
       if (Core.IsInitialized())
@@ -1593,6 +2211,13 @@ namespace Oculus.Platform
     /// Joins the target room (leaving the one you're currently in).
     /// \param roomID The room to join.
     /// \param roomOptions Additional room configuration for this request. Optional.
+    ///
+    /// <b>Error codes</b>
+    /// - \b 10: The room you're attempting to join is currently locked. Please try again later.
+    /// - \b 10: You don't have permission to enter this room. You may need to be invited first.
+    /// - \b 100: Invalid room_id: {room_id}. Either the ID is not a valid room or the user does not have permission to see or act on the room.
+    /// - \b 100: The room you're attempting to join is full. Please try again later.
+    /// - \b 100: This game isn't available. If it already started or was canceled, you can host a new game at any point.
     ///
     public static Request<Models.Room> Join2(UInt64 roomID, RoomOptions roomOptions)
     {
@@ -1608,6 +2233,11 @@ namespace Oculus.Platform
     /// \param roomID The room that you currently own (check Room.GetOwner()).
     /// \param userID The user to be kicked (cannot be yourself).
     /// \param kickDurationSeconds Length of the ban, in seconds.
+    ///
+    /// <b>Error codes</b>
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is not in the room (or any room). Perhaps they already left, or they stopped heartbeating. If this is a test environment, make sure you are not using the deprecated initialization methods ovr_PlatformInitializeStandaloneAccessToken (C++)/StandalonePlatform.Initialize(accessToken) (C#).
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is not the owner of the room.
+    /// - \b 100: You cannot remove yourself from room {room_id}
     ///
     public static Request<Models.Room> KickUser(UInt64 roomID, UInt64 userID, int kickDurationSeconds)
     {
@@ -1652,6 +2282,11 @@ namespace Oculus.Platform
     /// \param roomID The room that you currently own (check Room.GetOwner()).
     /// \param description The new name of the room.
     ///
+    /// <b>Error codes</b>
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is currently in another room (perhaps on another device), and thus is no longer in this room. Users can only be in one room at a time. If they are active on two different devices at once, there will be undefined behavior.
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is not in the room (or any room). Perhaps they already left, or they stopped heartbeating. If this is a test environment, make sure you are not using the deprecated initialization methods ovr_PlatformInitializeStandaloneAccessToken (C++)/StandalonePlatform.Initialize(accessToken) (C#).
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is not the owner of the room.
+    ///
     public static Request<Models.Room> SetDescription(UInt64 roomID, string description)
     {
       if (Core.IsInitialized())
@@ -1663,10 +2298,15 @@ namespace Oculus.Platform
     }
 
     /// Disallow new members from being able to join the room. This will prevent
-    /// joins from Room.Join(), invites, 'Join From Home', etc. Users that are in
+    /// joins from Rooms.Join(), invites, 'Join From Home', etc. Users that are in
     /// the room at the time of lockdown WILL be able to rejoin.
     /// \param roomID The room whose membership you want to lock or unlock.
     /// \param membershipLockStatus The new LockStatus for the room
+    ///
+    /// <b>Error codes</b>
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is currently in another room (perhaps on another device), and thus is no longer in this room. Users can only be in one room at a time. If they are active on two different devices at once, there will be undefined behavior.
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is not in the room (or any room). Perhaps they already left, or they stopped heartbeating. If this is a test environment, make sure you are not using the deprecated initialization methods ovr_PlatformInitializeStandaloneAccessToken (C++)/StandalonePlatform.Initialize(accessToken) (C#).
+    /// - \b 10: Room {room_id}: The user does not have permission to {cannot_action} because the user is not the owner of the room.
     ///
     public static Request<Models.Room> UpdateMembershipLockStatus(UInt64 roomID, RoomMembershipLockStatus membershipLockStatus)
     {
@@ -1704,6 +2344,45 @@ namespace Oculus.Platform
       }
 
       return null;
+    }
+
+    /// Indicates that the user has accepted an invitation, for example in Oculus
+    /// Home. Use Message.GetString() to extract the ID of the room that the user
+    /// has been inivted to as a string. Then call ovrID_FromString() to parse it
+    /// into an ovrID.
+    ///
+    /// Note that you must call Rooms.Join() if you want to actually join the room.
+    ///
+    public static void SetRoomInviteAcceptedNotificationCallback(Message<string>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_Room_InviteAccepted,
+        callback
+      );
+    }
+
+    /// Handle this to notify the user when they've received an invitation to join
+    /// a room in your game. You can use this in lieu of, or in addition to,
+    /// polling for room invitations via
+    /// Notifications.GetRoomInviteNotifications().
+    ///
+    public static void SetRoomInviteReceivedNotificationCallback(Message<Models.RoomInviteNotification>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_Room_InviteReceived,
+        callback
+      );
+    }
+
+    /// Indicates that the current room has been updated. Use Message.GetRoom() to
+    /// extract the updated room.
+    ///
+    public static void SetUpdateNotificationCallback(Message<Models.Room>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_Room_RoomUpdate,
+        callback
+      );
     }
 
   }
@@ -1836,10 +2515,10 @@ namespace Oculus.Platform
     }
 
     /// Part of the scheme to confirm the identity of a particular user in your
-    /// backend. You can pass the result of User.GetUserProof() and a user ID from
-    /// User.Get() to your your backend. Your server can then use our api to verify
-    /// identity. 'https://graph.oculus.com/user_nonce_validate?nonce=USER_PROOF&us
-    /// er_id=USER_ID&access_token=ACCESS_TOKEN'
+    /// backend. You can pass the result of Users.GetUserProof() and a user ID from
+    /// Users.Get() to your your backend. Your server can then use our api to
+    /// verify identity. 'https://graph.oculus.com/user_nonce_validate?nonce=USER_P
+    /// ROOF&user_id=USER_ID&access_token=ACCESS_TOKEN'
     ///
     /// NOTE: The nonce is only good for one check and then it is invalidated.
     ///
@@ -1853,9 +2532,22 @@ namespace Oculus.Platform
       return null;
     }
 
-    /// Launch the profile of the given user on Gear VR. The profile surfaces
-    /// information about the user and supports relevant actions that the viewer
-    /// may take on that user, e.g. sending a friend request.
+    /// Launch the flow for sending a friend request to a user.
+    /// \param userID User ID of user to send a friend request to
+    ///
+    public static Request<Models.LaunchFriendRequestFlowResult> LaunchFriendRequestFlow(UInt64 userID)
+    {
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.LaunchFriendRequestFlowResult>(CAPI.ovr_User_LaunchFriendRequestFlow(userID));
+      }
+
+      return null;
+    }
+
+    /// Launch the profile of the given user. The profile surfaces information
+    /// about the user and supports relevant actions that the viewer may take on
+    /// that user, e.g. sending a friend request.
     /// \param userID User ID for profile being viewed
     ///
     public static Request LaunchProfile(UInt64 userID)
@@ -1883,6 +2575,60 @@ namespace Oculus.Platform
       }
 
       return null;
+    }
+
+    /// Sent when another user is attempting to establish a VoIP connection. Use
+    /// Message.GetNetworkingPeer() to extract information about the user, and
+    /// Voip.Accept() to accept the connection.
+    ///
+    public static void SetVoipConnectRequestCallback(Message<Models.NetworkingPeer>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_Voip_ConnectRequest,
+        callback
+      );
+    }
+
+    /// Sent to indicate that the state of the VoIP connection changed. Use
+    /// Message.GetNetworkingPeer() and NetworkingPeer.GetState() to extract the
+    /// current state.
+    ///
+    public static void SetVoipStateChangeCallback(Message<Models.NetworkingPeer>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_Voip_StateChange,
+        callback
+      );
+    }
+
+    /// Sent to indicate that some part of the overall state of SystemVoip has
+    /// changed. Use Message.GetSystemVoipState() and the properties of
+    /// SystemVoipState to extract the state that triggered the notification.
+    ///
+    /// Note that the state may have changed further since the notification was
+    /// generated, and that you may call the `GetSystemVoip...()` family of
+    /// functions at any time to get the current state directly.
+    ///
+    public static void SetSystemVoipStateNotificationCallback(Message<Models.SystemVoipState>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_Voip_SystemVoipState,
+        callback
+      );
+    }
+
+  }
+
+  public static partial class Vrcamera
+  {
+    /// Get surface and update action from platform webrtc for update.
+    ///
+    public static void SetGetSurfaceUpdateNotificationCallback(Message<string>.Callback callback)
+    {
+      Callback.SetNotificationCallback(
+        Message.MessageType.Notification_Vrcamera_GetSurfaceUpdate,
+        callback
+      );
     }
 
   }
@@ -2011,6 +2757,29 @@ namespace Oculus.Platform
           CAPI.ovr_HTTP_GetWithMessageType(
             list.NextUrl,
             (int)Message.MessageType.Notification_GetNextRoomInviteNotificationArrayPage
+          )
+        );
+      }
+
+      return null;
+    }
+
+  }
+
+  public static partial class RichPresence {
+    public static Request<Models.DestinationList> GetNextDestinationListPage(Models.DestinationList list) {
+      if (!list.HasNextPage)
+      {
+        Debug.LogWarning("Oculus.Platform.GetNextDestinationListPage: List has no next page");
+        return null;
+      }
+
+      if (Core.IsInitialized())
+      {
+        return new Request<Models.DestinationList>(
+          CAPI.ovr_HTTP_GetWithMessageType(
+            list.NextUrl,
+            (int)Message.MessageType.RichPresence_GetNextDestinationArrayPage
           )
         );
       }

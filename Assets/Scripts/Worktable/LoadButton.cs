@@ -90,7 +90,7 @@ namespace Controls
         {
             Debug.Log(other.transform.parent.name);
             //Check if the trigger is entering the button from above
-            if (other.transform.parent.name.StartsWith("hand") && !fromTop)
+            if (other.GetComponent<GrabControl>() != null && !fromTop)
             {
                 Debug.Log(other.transform.position.y);
                 Debug.Log(transform.position.y);
@@ -113,7 +113,7 @@ namespace Controls
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.transform.parent.name.StartsWith("hand"))
+            if (other.GetComponent<GrabControl>() != null)
             {
                 fromTop = false;
             }

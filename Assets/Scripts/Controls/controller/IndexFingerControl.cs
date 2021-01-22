@@ -50,6 +50,7 @@ public class IndexFingerControl : MonoBehaviour {
             _fingerInteractableObjects.Add(interact);
             _fingerInteractableObjects[_fingerInteractableObjects.Count-1].StartHighlight();
             UpdateHoverColor();
+            interact.StartInteraction(controllerSphereCollider, this);
             lastAction = Time.time;
         }
     }

@@ -1,28 +1,48 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System;
-using Controls;
+using Oculus.Avatar;
 
-public class OvrAvatarHand : MonoBehaviour
+public class OvrAvatarHand : OvrAvatarComponent
 {
-
-
-    void Awake()
-    {
-    }
-
-    void OnTriggerEnter(Collider collider)
-    {
-        Debug.Log("hello");
-        //Debug.Log("Hello I just hit vertex: " + collider.GetComponent<VertexHandleController>().AssociatedVertexID);
-    }
-
-    void OnTriggerExit(Collider collider)
-    {
-    }
+    public bool isLeftHand = true;
+    ovrAvatarHandComponent component = new ovrAvatarHandComponent();
 
     void Update()
     {
+        if (owner == null)
+        {
+            return;
+        }
+
+        bool hasComponent = false;
+        if (isLeftHand)
+        {
+            hasComponent = CAPI.ovrAvatarPose_GetLeftHandComponent(owner.sdkAvatar, ref component);
+        }
+        else
+        {
+            hasComponent = CAPI.ovrAvatarPose_GetRightHandComponent(owner.sdkAvatar, ref component);
+        }
+
+        if (hasComponent)
+        {
+            UpdateAvatar(component.renderComponent);
+        }
+        else
+        {
+            if (isLeftHand)
+            {
+                owner.HandLeft = null;
+
+            }
+            else
+            {
+                owner.HandRight = null;
+            }
+
+            Destroy(this);
+        }
     }
 }
