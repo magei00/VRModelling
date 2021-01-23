@@ -141,9 +141,16 @@ public class GrabControl : MonoBehaviour {
 
     }
 
+    //This Trigger stay is only really here because a trigger enter is not detected when expanding a hitbox, which we do with the extrudable controller.
+    //So when you extrude, you can be in the model with your hand and not move it, this check prevents that.
     void OnTriggerStay(Collider collider)
     {
         collidedObject = collider.gameObject;
+
+        if(_interactableObjects.Count == 0)
+        {
+            OnTriggerEnter(collider);
+        }
     }
 
     void Update()

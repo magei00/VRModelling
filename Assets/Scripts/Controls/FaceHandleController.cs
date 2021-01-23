@@ -184,7 +184,7 @@ namespace Controls
 
                     //if (OVRInput.Get(OVRInput.NearTouch.PrimaryThumbButtons, gc.Controller) && extrudingFaces.Count() == 1)
                     //Measuring band
-                    if (OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, gc.Controller) >0.5)
+                    if (OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, gc.Controller) >0.2 || OVRInput.Get(OVRInput.NearTouch.PrimaryThumbButtons, gc.Controller))
                     {
                         tickState = true;
                     }
