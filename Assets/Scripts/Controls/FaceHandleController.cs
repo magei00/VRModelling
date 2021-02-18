@@ -514,7 +514,8 @@ namespace Controls
         private void MergeWithCollidingFaces()
         {
 
-            //Collecting all the faces of the extrusion, and comparing them to neighbouring faces. If they are facing add them both for removal.
+            //Collecting all moved faces and static faces and remove faces if they overlap.
+
             var facesToRemove = new List<int>();
 
             Manifold manifold = Extrudable._manifold;
@@ -535,18 +536,18 @@ namespace Controls
          
             HashSet<int> facesBeingExtruded = new HashSet<int>();
 
+            //collect all neighbouring faces of extruded faces, theses faces are the one connecting the vertices of the old face to the face being moved. 
             foreach(int face0 in extrudingFaces)
             {
                 foreach(int face1 in Extrudable._manifold.GetAdjacentFaceIdsAndEdgeCenters(face0).faceId)
                 {
                     facesBeingExtruded.Add(face1);
                 }
+                //the moved face itself
+                facesBeingExtruded.Add(face0);
             }
 
-            foreach(int face in extrudingFaces)
-            {
-                facesBeingExtruded.Add(face);
-            }
+           
 
             foreach (int faceMoving in facesBeingExtruded)
             {
@@ -564,19 +565,13 @@ namespace Controls
 
                             if (facingFaces(matches, faceMoving, verticesFromFaceMoving, faceStatic, verticesFromFaceStatic))
                             {
-                                //Extrudable.ChangeManifold(initialManifold.Copy());
-                                Debug.Log("Applying face bridging");
                                 if (matches.Length == 6)
                                 {
-                                    //Extrudable.bridgeFaces(faceMoving, faceStatic, new int[] { matches[0], matches[1], matches[2] }, new int[] { matches[3], matches[4], matches[5] }, 3);
-                                    //ControlsManager.Instance.UpdateControls();
                                     facesToRemove.Add(faceMoving);
                                     facesToRemove.Add(faceStatic);
                                 }
                                 else if (matches.Length == 8)
                                 {
-                                    //Extrudable.bridgeFaces(faceMoving, faceStatic, new int[] { matches[0], matches[1], matches[2], matches[3] }, new int[] { matches[4], matches[5], matches[6], matches[7] }, 4);
-                                    //ControlsManager.Instance.UpdateControls();
                                     facesToRemove.Add(faceMoving);
                                     facesToRemove.Add(faceStatic);
                                 }
@@ -591,33 +586,12 @@ namespace Controls
                 }
             }
 
-            /*
-            foreach (int face0 in extrudingFaces)
-            {
-
-                foreach (int face1 in Extrudable._manifold.GetAdjacentFaceIdsAndEdgeCenters(face0).faceId)
-                {
-                    foreach (int face2 in Extrudable._manifold.GetAdjacentFaceIdsAndEdgeCenters(face1).faceId)
-                    {
-                        if (facingFaces(face1, face2))
-                        {
-                            facesToRemove.Add(face1);
-                            facesToRemove.Add(face2);
-
-                        }
-                    }
-                }
-            }*/
-
             //remove facing faces and stich everything together
             foreach (int face in facesToRemove)
             {
                 Extrudable._manifold.RemoveFace(face);
             }
             Extrudable._manifold.StitchMesh(0.05);
-            //Extrudable.TriangulateAndDrawManifold();
-            //ControlsManager.Instance.UpdateControls();
-            //ControlsManager.Instance.UpdateControls();
         }
 
         public void UpdatePositionAndRotation(Vector3 center, Vector3 normal, Vector3 edge)
