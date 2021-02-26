@@ -8,7 +8,7 @@ Originally, the system was developed by Valerii Kamalov as part of his MSc thesi
 
 ## Use
 
-Please clone or download and try out this system (using Unity3D ver. 2018.2.17f1). If you make changes that might be valuable - bugfixes or improvements, I would be grateful if you let me know. Possibly they can be included in a new version. 
+Please clone or download and try out this system (using Unity3D ver. 2019.4.18). If you make changes that might be valuable - bugfixes or improvements, I would be grateful if you let me know. Possibly they can be included in a new version. 
 
 ## Licensing
 
