@@ -195,26 +195,6 @@ public class GrabControl : MonoBehaviour {
                 break;
         }
 
-
-
-        //Movement of model
-        /*if (OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, Controller) > 0.5f 
-            && IsInsideModel()
-            && currentInteraction == null)
-        {
-            controls.Extrudable.transform.root.Translate(transform.position - prevPos, Space.World);
-            Quaternion deltaRot = transform.rotation * Quaternion.Inverse(prevRot);
-            controls.Extrudable.transform.root.position = RotatePointAroundPivot(controls.Extrudable.transform.root.position, transform.position, deltaRot);
-            controls.Extrudable.transform.root.Rotate(deltaRot.eulerAngles,Space.World);
-            //controls.UpdateControls();
-        }
-        
-        
-        prevPos = transform.position;
-        prevRot = transform.rotation;
-
-        */
-
         //Debug state changes
             if (PrevHandState != HandState)
         {

@@ -232,14 +232,14 @@ namespace Controls
                     if (isExtruding && translateSnap && angleSnap)
                     {
                         if (tickState)
-                    {
-                        float extrusionLength = (Extrudable._manifold.GetCenter(AssociatedFaceID) - initialFaceCenter).magnitude;
-                        updateMeasuringBands(Mathf.Round(extrusionLength * 50) / 50);
-                    }
-                    else
-                    {
-                        updateMeasuringBands(Vector3.Dot(move_from_initial_pos, norm));
-                    }
+                        {
+                            float extrusionLength = (Extrudable._manifold.GetCenter(AssociatedFaceID) - initialFaceCenter).magnitude;
+                            updateMeasuringBands(Mathf.Round(extrusionLength * 50) / 50);
+                        }
+                        else
+                        {
+                            updateMeasuringBands(Vector3.Dot(move_from_initial_pos, norm));
+                        }
                     }
 
                     // change between previous rotation and current rotation
@@ -273,14 +273,7 @@ namespace Controls
 
                     }
 
-                    //lastRotation = GetControllerRotationInLocalSpace();
                     ControlsManager.Instance.Extrudable.rebuild = true;
-                    /*
-                    if (extrudingFaces.Count > 1)
-                    {
-                        controlsManager.UpdateFacesAndSelectedEdges(new List<int> { AssociatedFaceID});
-                    }
-                    */
                 }
             }
         }
@@ -304,9 +297,6 @@ namespace Controls
                 sbsPlane.transform.Translate(faceNorm * -0.001f);
                 sbsPlane.transform.localRotation = Quaternion.LookRotation(faceNorm);
                 sbsPlane.transform.Rotate(0,90,90,Space.Self);
-                //Debug.Log("Created" + sbsPlane.ToString());
-                //Debug.Log(pos+"   "+faceNorm);
-                //Debug.Break();
             }
         }
 
@@ -360,21 +350,7 @@ namespace Controls
 
         public override void Interact()
         {
-            // pointToPlaneVectorTest
-            /*
-            Vector3 nTest = new Vector3(1f, 1f, 0f);
-            Vector3 pvTest = new Vector3(2f, 2f, 0f);
-
-            Vector3 pointTest = new Vector3(1f, 5f, 0f);
-            Vector3 pointTest2 = new Vector3(1f, 5f, 1f);
-            Vector3 pointTest3 = new Vector3(6f, 3f, 0f);
-            Vector3 pointTest4 = new Vector3(6f, 3f, 1f);
-
-            Debug.Log(pointToPlaneVector(nTest, pvTest, pointTest).ToVector3f().ToString());
-            Debug.Log(pointToPlaneVector(nTest, pvTest, pointTest2).ToVector3f().ToString());
-            Debug.Log(pointToPlaneVector(nTest, pvTest, pointTest3).ToVector3f().ToString());
-            Debug.Log(pointToPlaneVector(nTest, pvTest, pointTest4).ToVector3f().ToString());
-            */
+            
 
             initialPosition = transform.localPosition;
             initialRotation = transform.localRotation;
@@ -405,8 +381,6 @@ namespace Controls
             }
             else
             {
-                //ControlsManager.Instance.DeleteControlsExceptSelectedFaces(extrudingFaces);
-                //ControlsManager.Instance.DeleteControlsExceptFaces(initialManifold.GetAdjacentFaceIdsAndEdgeCenters(AssociatedFaceID).faceId, AssociatedFaceID);
                 ControlsManager.Instance.DeleteControlsExceptFaces(new int[0], AssociatedFaceID);
             }
 
@@ -431,35 +405,32 @@ namespace Controls
 
                 }
                 else if (!planeSnap)
-                //else if (extrudingFaces.Count == 1) // yes/no maybe
                 {
                     Debug.Log("Attempting face bridging");
-                    if (true)//(hasDistinctAdjacentFaces(collidedFaceHandle))
-                    {
-                        //collidedFaceHandleVertexPositions = controlsManager.GetVertexPositionsFromFaces(new List<int> { collidedFaceID });
-                        collidedFaceHandleVertexPositions = initialManifold.GetVertexPositionsFromFace(collidedFaceID);
+                    
+                    collidedFaceHandleVertexPositions = initialManifold.GetVertexPositionsFromFace(collidedFaceID);
 
-                        if (collidedFaceHandleVertexPositions.Count() == initialVertexPositions.Count() && extrudingFaces.Count == 1)
-                        {
-                            var matches = faceBridgingVertexAssignment(initialVertexPositions, collidedFaceHandleVertexPositions);
+                    if (collidedFaceHandleVertexPositions.Count() == initialVertexPositions.Count() && extrudingFaces.Count == 1)
+                    {
+                        var matches = faceBridgingVertexAssignment(initialVertexPositions, collidedFaceHandleVertexPositions);
                             
-                            if (/*facingFaces(matches, AssociatedFaceID, initialVertexPositions, collidedFaceID, collidedFaceHandleVertexPositions)*/ true)
+                        if (/*facingFaces(matches, AssociatedFaceID, initialVertexPositions, collidedFaceID, collidedFaceHandleVertexPositions)*/ true)
+                        {
+                            Extrudable.ChangeManifold(initialManifold.Copy());
+                            Debug.Log("Applying face bridging");
+                            if (matches.Length == 6)
                             {
-                                Extrudable.ChangeManifold(initialManifold.Copy());
-                                Debug.Log("Applying face bridging");
-                                if (matches.Length == 6)
-                                {
-                                    Extrudable.bridgeFaces(AssociatedFaceID, collidedFaceID, new int[] { matches[0], matches[1], matches[2] }, new int[] { matches[3], matches[4], matches[5] }, 3);
-                                    ControlsManager.Instance.UpdateControls();
-                                }
-                                else if (matches.Length == 8)
-                                {
-                                    Extrudable.bridgeFaces(AssociatedFaceID, collidedFaceID, new int[] { matches[0], matches[1], matches[2], matches[3] }, new int[] { matches[4], matches[5], matches[6], matches[7] }, 4);
-                                    ControlsManager.Instance.UpdateControls();
-                                }
+                                Extrudable.bridgeFaces(AssociatedFaceID, collidedFaceID, new int[] { matches[0], matches[1], matches[2] }, new int[] { matches[3], matches[4], matches[5] }, 3);
+                                ControlsManager.Instance.UpdateControls();
+                            }
+                            else if (matches.Length == 8)
+                            {
+                                Extrudable.bridgeFaces(AssociatedFaceID, collidedFaceID, new int[] { matches[0], matches[1], matches[2], matches[3] }, new int[] { matches[4], matches[5], matches[6], matches[7] }, 4);
+                                ControlsManager.Instance.UpdateControls();
                             }
                         }
                     }
+                    
                     collidedFaceHandleVertexPositions = null;
                 }
                 
@@ -485,26 +456,7 @@ namespace Controls
                 {
                     Extrudable.ChangeManifold(initialManifold);
                 }
-/*
-                if (collapsed > 0)
-                {
-                    
-                }
-                else if (Extrudable.isValidMesh())
-                {
-                    //ControlsManager.Instance.DestroyInvalidObjects();
-                    ControlsManager.Instance.Extrudable.rebuild = true;
-                    //ControlsManager.Instance.UpdateControls();
-                    ControlsManager.FireUndoEndEvent(mesh, this, initialPosition, initialRotation);
 
-                    
-
-                    
-                }
-                else
-                {
-                    Extrudable.ChangeManifold(initialManifold);
-                }*/
                 DisableSBSPlane();
             }
              
